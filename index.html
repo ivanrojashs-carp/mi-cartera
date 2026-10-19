@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Cartera">
+<meta name="theme-color" content="#0b1220">
+<title>Mi Cartera</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --bg:#0b1220;--panel:#121a2b;--panel2:#18223a;--line:#25314d;--text:#e6ebf5;--muted:#8b97b3;
+  --accent:#14b8a6;--accent2:#0e7c7b;--pos:#22c55e;--neg:#ef4444;--warn:#f59e0b;--blue:#60a5fa;--orange:#fb923c;--yellow:#facc15;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb;--panel:#ffffff;--panel2:#eef2f8;--line:#d7dde9;--text:#152033;--muted:#5c6880;
+  --accent:#0f9488;--accent2:#0e7c7b;--pos:#16a34a;--neg:#dc2626;--warn:#d97706;--blue:#2563eb;--orange:#ea580c;--yellow:#ca8a04;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:17px;margin:0 8px 0 0;letter-spacing:.5px}
+header h1 span{color:var(--accent)}
+.grow{flex:1}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:53px;z-index:19;scrollbar-width:none}
+nav.tabs button{background:none;border:0;padding:7px 12px;border-radius:8px;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav.tabs button.on{background:var(--panel2);color:var(--text);font-weight:600}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent2);border-color:var(--accent2);color:#fff;font-weight:600}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn.danger{color:var(--neg)}
+select,input,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+input[type=checkbox]{width:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel2);border:0;padding:6px 10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--accent2);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+.card .val{font-size:22px;font-weight:700;margin-top:4px}
+.card .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.pos{color:var(--pos)}.neg{color:var(--neg)}.muted{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px}
+.panel h2{font-size:15px;margin:0 0 10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:70vh}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel2);font-size:12px;color:var(--muted);cursor:pointer;user-select:none;z-index:1}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);z-index:2}
+th:first-child{background:var(--panel2);z-index:3}
+td.l,th.l{text-align:left}
+tr:hover td{background:var(--panel2)}
+tfoot td{font-weight:700;background:var(--panel2)}
+.tick{font-weight:700;cursor:pointer;color:var(--text)}
+.tick:hover{color:var(--accent)}
+.badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px;vertical-align:middle}
+.badge.sl{background:var(--neg);color:#fff;border-color:var(--neg)}
+.badge.tp{background:var(--pos);color:#fff;border-color:var(--pos)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:rgba(20,184,166,.15);color:var(--accent);margin-right:3px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;width:100%;max-width:620px}
+.modal h3{margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 label,.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.grid2 .full{grid-column:1/-1}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.hint{font-size:12px;color:var(--muted)}
+.heat{display:flex;flex-wrap:wrap;gap:4px}
+.heat div{border-radius:8px;padding:8px;min-height:70px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;overflow:hidden;cursor:pointer}
+.heat b{font-size:14px}.heat small{font-size:12px;opacity:.95}
+svg text{fill:var(--muted);font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.status{font-size:12px;color:var(--muted)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.colcfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.colcfg label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--text)}
+@media (max-width:700px){
+  .grid2{grid-template-columns:1fr}
+  nav.tabs{top:0;position:relative}
+  header{position:relative}
+  .card .val{font-size:19px}
+  main{padding:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>MI <span>CARTERA</span></h1>
+  <select id="pfSel" title="Portfolio"></select>
+  <button class="btn sm" id="pfManage">Portfolios</button>
+  <div class="grow"></div>
+  <div class="seg" id="curSeg"><button data-c="ARS">ARS</button><button data-c="USD">USD CCL</button></div>
+  <button class="btn" id="refresh" title="Actualizar precios">⟳</button>
+  <button class="btn pri" id="addOp">+ Operación</button>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-t="cartera">Cartera</button>
+  <button data-t="rendimiento">Mi rendimiento</button>
+  <button data-t="heatmap">Mapa de calor</button>
+  <button data-t="ventas">Ventas realizadas</button>
+  <button data-t="operaciones">Operaciones</button>
+  <button data-t="desarb">Desarbitrajes</button>
+  <button data-t="eventos">Ajustes de ratio</button>
+  <button data-t="datos">Datos y preferencias</button>
+</nav>
+<main id="main"></main>
+<div id="modalRoot"></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   Mi Cartera — reimplementación personal de la lógica de seguimiento de AMEBA.
+   Todo vive en este archivo y en localStorage. Sin cuentas ni servidor.
+   Fuentes de mercado públicas (CORS abiertos):
+     - data912.com: precios live e históricos (acciones AR, CEDEARs, bonos, USA)
+     - dolarapi.com / argentinadatos.com: CCL hoy e histórico, inflación INDEC
+     - api.binance.com: cripto
+   ========================================================================= */
+
+const KEY = 'micartera-v1';
+const ASSETS = {
+  accion_ar: {label:'Acción AR', live:['arg_stocks'], hist:'stocks', div:1},
+  cedear:    {label:'CEDEAR', live:['arg_cedears'], hist:'cedears', div:1},
+  bono:      {label:'Bono / ON / Letra (VN 100)', live:['arg_bonds','arg_corp','arg_notes'], hist:'bonds', div:100},
+  usa:       {label:'Acción/ETF USA (USD)', live:['usa_stocks','usa_adrs','_usa_fb'], hist:'usa_stocks', div:1, usd:true},
+  cripto:    {label:'Cripto (USD)', div:1, usd:true},
+  liquidez:  {label:'Liquidez (ARS / USD)', div:1},
+  otro:      {label:'Otro (precio manual)', div:1},
+};
+
+/* ---------------------------- Estado ---------------------------- */
+function defState(){
+  return {
+    portfolios:[{id:'p1', name:'Principal'}],
+    ops:[],            // {id,pid,date,type:'buy'|'sell'|'div',ticker,asset,cur,qty,price,priceArs,ccl,fee,tags[],desc}
+    tickers:{},        // ticker -> {ratio,underlying,sl,tp,slBasis,manualPrice,manualCur,color}
+    ratioEvents:[],    // {id,ticker,date,factor,note,applied:bool,affected:[opIds]}
+    prefs:{currency:'ARS', pid:'all', tab:'cartera', costMethod:'ppp', theme:'auto',
+           hiddenCols:['underlyingAvgUSD','underlyingPriceUSD','underlyingVar','updated','desc','sl','tp','commission'],
+           sort:{key:'valueArs',dir:-1}, refreshMin:0, heatMetric:'day'},
+  };
+}
+let S = load();
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(!s) return defState();
+    const d = defState();
+    return {...d, ...s, prefs:{...d.prefs, ...(s.prefs||{})}};
+  }catch(e){ return defState(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ alert('No se pudo guardar: '+e.message); } }
+const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+
+/* ---------------------------- Formato ---------------------------- */
+const nf = (d=2) => new Intl.NumberFormat('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmt = (v,d=2) => (v==null||!isFinite(v)) ? '—' : nf(d).format(v);
+const money = (v,cur) => (v==null||!isFinite(v)) ? '—' : (cur==='USD'?'US$ ':'$ ')+nf(Math.abs(v)<1&&v!==0?4:2).format(v);
+const pct = (v,d=2) => (v==null||!isFinite(v)) ? '—' : (v>0?'+':'')+nf(d).format(v)+'%';
+const cls = v => v>0?'pos':(v<0?'neg':'');
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const monthKey = d => d.slice(0,7);
+const daysBetween = (a,b) => Math.max(0, Math.floor((Date.parse(b)-Date.parse(a))/864e5));
+const fmtDays = d => { if(d==null||!isFinite(d)) return '—'; d=Math.floor(d); if(d<30) return d+'d'; const y=Math.floor(d/365); if(y>0){const m=Math.floor((d-365*y)/30);return m>0?`${y}a ${m}m`:`${y}a`;} return Math.floor(d/30)+'m'; };
+
+/* ---------------------------- Mercado ---------------------------- */
+const M = { live:{}, crypto:{}, ccl:0, cclAt:null, cclHist:[], infl:{}, hist:{}, loading:false, err:[] };
+
+async function getJSON(url){ const r = await fetch(url); if(!r.ok) throw new Error(r.status+' '+url); return r.json(); }
+
+async function loadCCL(){
+  try{ const j = await getJSON('https://dolarapi.com/v1/dolares/contadoconliqui'); M.ccl = +j.venta; M.cclAt = j.fechaActualizacion; }
+  catch(e){ M.err.push('CCL hoy'); }
+}
+async function loadCCLHist(){
+  const ck = cacheGet('cclhist'); if(ck){ M.cclHist = ck; return; }
+  try{
+    const j = await getJSON('https://api.argentinadatos.com/v1/cotizaciones/dolares/contadoconliqui');
+    M.cclHist = j.map(x=>[x.fecha, +x.venta]).sort((a,b)=>a[0]<b[0]?-1:1);
+    cacheSet('cclhist', M.cclHist);
+  }catch(e){ M.err.push('CCL histórico'); }
+}
+async function loadInflation(){
+  const ck = cacheGet('infl'); if(ck){ M.infl = ck; return; }
+  try{
+    const j = await getJSON('https://api.argentinadatos.com/v1/finanzas/indices/inflacion');
+    M.infl = {}; j.forEach(x=>{ M.infl[monthKey(x.fecha)] = +x.valor; });
+    cacheSet('infl', M.infl);
+  }catch(e){ M.err.push('Inflación'); }
+}
+// CCL de una fecha (último disponible <= fecha)
+function cclAt(date){
+  const h = M.cclHist; if(!h.length) return M.ccl||0;
+  if(date >= h[h.length-1][0]) return date>=today().slice(0,10)&&M.ccl ? M.ccl : h[h.length-1][1];
+  let lo=0, hi=h.length-1;
+  while(lo<hi){ const mid=(lo+hi+1)>>1; if(h[mid][0]<=date) lo=mid; else hi=mid-1; }
+  return h[lo][0]<=date ? h[lo][1] : h[0][1];
+}
+async function loadLive(){
+  const lists = new Set(['arg_cedears','usa_stocks']); // usa_stocks: subyacentes de CEDEARs / desarbitrajes
+  allTickersInfo().forEach(t=>{ (ASSETS[t.asset]?.live||[]).filter(l=>l[0]!=='_').forEach(l=>lists.add(l)); });
+  await Promise.all([...lists].map(async l=>{
+    try{
+      const j = await getJSON('https://data912.com/live/'+l);
+      const m = {}; j.forEach(x=>{ const p = +x.c || ((+x.px_bid + +x.px_ask)/2) || 0; m[x.symbol] = {p, pct:+x.pct_change||0, bid:+x.px_bid||0, ask:+x.px_ask||0, v:+x.v||0}; });
+      M.live[l] = m;
+    }catch(e){ M.err.push(l); }
+  }));
+  // ETFs USA (SPY, QQQ…) no están en el live de data912: último cierre diario del histórico
+  M.live.usa_stocks = M.live.usa_stocks || {};
+  const usaAll = {...(M.live.usa_adrs||{}), ...M.live.usa_stocks};
+  const need = new Set(['SPY']);
+  allTickersInfo().forEach(t=>{ if(t.asset==='usa') need.add(t.ticker); if(t.asset==='cedear') need.add(underlyingOf(t.ticker)); });
+  M.live._usa_fb = M.live._usa_fb || {};
+  await Promise.all([...need].filter(t=>!usaAll[t]?.p).map(async t=>{
+    try{ const j = await getJSON('https://data912.com/historical/usa_stocks/'+encodeURIComponent(t)); const n=j.prices.length;
+      if(n) M.live._usa_fb[t] = {p:+j.prices[n-1], pct: n>1 ? (j.prices[n-1]/j.prices[n-2]-1)*100 : 0, close:true, date:j.dates[n-1]}; }catch(e){}
+  }));
+  Object.assign(M.live.usa_stocks, M.live.usa_adrs||{}, M.live._usa_fb);
+  const cryptos = allTickersInfo().filter(t=>t.asset==='cripto').map(t=>t.ticker);
+  await Promise.all(cryptos.map(async t=>{
+    try{ const j = await getJSON('https://api.binance.com/api/v3/ticker/24hr?symbol='+encodeURIComponent(t.toUpperCase()+'USDT'));
+      M.crypto[t] = {p:+j.lastPrice, pct:+j.priceChangePercent}; }catch(e){ M.err.push(t); }
+  }));
+}
+async function refreshMarket(full){
+  M.loading = true; M.err = []; setStatus('Actualizando precios…');
+  await Promise.all([loadCCL(), full?loadCCLHist():null, full?loadInflation():null]);
+  await loadLive();
+  M.loading = false; M.updatedAt = new Date();
+  setStatus(M.err.length ? 'Sin datos de: '+M.err.join(', ') : 'Precios actualizados '+M.updatedAt.toLocaleTimeString('es-AR'));
+  render();
+}
+
+/* cache de históricos mensuales en localStorage (se refresca 1 vez por día) */
+function cacheGet(k){ try{ const o = JSON.parse(localStorage.getItem('mc-cache:'+k)); return o && o.d===today() ? o.v : null; }catch(e){ return null; } }
+function cacheSet(k,v){ try{ localStorage.setItem('mc-cache:'+k, JSON.stringify({d:today(), v})); }catch(e){} }
+
+// devuelve {YYYY-MM: cierre del mes} en moneda de cotización
+async function monthlyHist(ticker, asset){
+  const k = asset+':'+ticker;
+  if(M.hist[k]) return M.hist[k];
+  const ck = cacheGet('h:'+k); if(ck){ M.hist[k]=ck; return ck; }
+  const out = {};
+  try{
+    if(asset==='usa' || asset==='_spy'){
+      const j = await getJSON('https://data912.com/historical/usa_stocks/'+encodeURIComponent(ticker));
+      j.dates.forEach((d,i)=>{ out[monthKey(d)] = +j.prices[i]; });
+    }else if(asset==='cripto'){
+      const j = await getJSON('https://api.binance.com/api/v3/klines?symbol='+encodeURIComponent(ticker.toUpperCase()+'USDT')+'&interval=1M&limit=1000');
+      j.forEach(r=>{ out[new Date(r[0]).toISOString().slice(0,7)] = +r[4]; });
+    }else if(ASSETS[asset]?.hist){
+      const j = await getJSON('https://data912.com/historical/'+ASSETS[asset].hist+'/'+encodeURIComponent(ticker));
+      j.forEach(r=>{ out[monthKey(r.date)] = +r.c; });
+    }
+  }catch(e){ console.warn('hist',k,e); }
+  M.hist[k] = out; cacheSet('h:'+k, out);
+  return out;
+}
+
+/* ---------------------------- Modelo ---------------------------- */
+function opsInScope(){
+  const pid = S.prefs.pid;
+  return S.ops.filter(o => pid==='all' || o.pid===pid);
+}
+function allTickersInfo(){
+  const m = new Map();
+  S.ops.forEach(o=>{ if(!m.has(o.ticker)) m.set(o.ticker,{ticker:o.ticker, asset:o.asset, cur:o.cur}); });
+  return [...m.values()];
+}
+function tcfg(t){ return S.tickers[t] || (S.tickers[t]={}); }
+const isCash = t => t==='ARS' || t==='USD';
+
+// Cotización actual en moneda de cotización + equivalencias
+function quote(ticker, asset, cur){
+  const cfg = S.tickers[ticker]||{};
+  const ccl = M.ccl || cclAt(today());
+  let p=null, pctDay=null, qcur = ASSETS[asset]?.usd ? 'USD' : cur;
+  if(asset==='liquidez'){ p = ticker==='USD' ? 1 : 1; qcur = ticker==='USD'?'USD':'ARS'; pctDay = 0; }
+  else if(cfg.manualPrice){ p = +cfg.manualPrice; qcur = cfg.manualCur || qcur; }
+  else if(asset==='cripto'){ const c = M.crypto[ticker]; if(c){ p=c.p; pctDay=c.pct; } }
+  else { for(const l of (ASSETS[asset]?.live||[])){ const x = M.live[l]?.[ticker]; if(x && x.p){ p=x.p; pctDay=x.pct; break; } } }
+  if(p==null) return null;
+  const div = ASSETS[asset]?.div||1;
+  const unitArs = (qcur==='USD' ? p*ccl : p)/div;   // valor por unidad (nominal) en ARS
+  return {p, pct:pctDay, qcur, unitArs, unitUsd: ccl ? unitArs/ccl : 0};
+}
+function underlyingOf(ticker){
+  const cfg = S.tickers[ticker]||{};
+  if(cfg.underlying) return cfg.underlying;
+  return ticker.replace(/[DC]$/,'') === ticker ? ticker : ticker; // por defecto, mismo símbolo
+}
+// Ratio CEDEAR: configurado o estimado con precios de mercado (CCL de referencia)
+function ratioOf(ticker){
+  const cfg = S.tickers[ticker]||{};
+  if(+cfg.ratio>0) return {r:+cfg.ratio, est:false};
+  const ced = M.live.arg_cedears?.[ticker], usa = M.live.usa_stocks?.[underlyingOf(ticker)];
+  const ccl = M.ccl; if(!ced?.p || !usa?.p || !ccl) return null;
+  const raw = usa.p*ccl/ced.p; if(!isFinite(raw)||raw<=0) return null;
+  const r = raw>=1.5 ? Math.round(raw) : Math.round(raw*4)/4;
+  return {r, est:true};
+}
+
+/* Construcción de posiciones (equivalente al módulo de agrupación de AMEBA):
+   - buy_price en ARS por unidad + CCL de la fecha de compra
+   - PPC ARS / USD por promedio ponderado; ventas descuentan al promedio (o FIFO)
+   - comisiones se acumulan aparte (no alteran el PPC)
+   - días de tenencia desde que la posición se abrió por última vez; tenencia ponderada FIFO */
+function buildPositions(ops, method){
+  method = method || S.prefs.costMethod;
+  const sorted = [...ops].sort((a,b)=> a.date<b.date?-1: a.date>b.date?1: (a.type==='buy'&&b.type!=='buy'?-1: a.type!=='buy'&&b.type==='buy'?1:0));
+  const pos = new Map(); const sales = [];
+  for(const o of sorted){
+    let p = pos.get(o.ticker);
+    if(!p){ p = {ticker:o.ticker, asset:o.asset, cur:o.cur, qty:0, costArs:0, costUsd:0, lots:[], realArs:0, realUsd:0, divArs:0, divUsd:0,
+                 feesArs:0, firstOpen:null, tags:new Set(), descs:[], pids:new Set(), lastDate:null}; pos.set(o.ticker,p); }
+    p.pids.add(o.pid); (o.tags||[]).forEach(t=>p.tags.add(t)); if(o.desc) p.descs.push(o.desc); p.lastDate=o.date;
+    const ccl = +o.ccl || cclAt(o.date) || 1;
+    const feeArs = (+o.fee||0) * (o.cur==='USD'?ccl:1);
+    p.feesArs += feeArs;
+    const q = +o.qty||0, pa = +o.priceArs, pu = pa/ccl;
+    if(o.type==='buy'){
+      if(p.qty<=1e-12) p.firstOpen = o.date;
+      p.qty += q; p.costArs += q*pa; p.costUsd += q*pu;
+      p.lots.push({q, pa, pu, date:o.date});
+    }else if(o.type==='sell'){
+      const s = Math.min(q, p.qty); if(s<=0) continue;
+      let cA=0, cU=0;
+      if(method==='fifo'){
+        let rem=s; for(const l of p.lots){ if(rem<=0) break; const t=Math.min(rem,l.q); cA+=t*l.pa; cU+=t*l.pu; l.q-=t; rem-=t; }
+        p.lots = p.lots.filter(l=>l.q>1e-12);
+      }else{
+        cA = s*p.costArs/p.qty; cU = s*p.costUsd/p.qty;
+        let rem=s; for(const l of p.lots){ if(rem<=0) break; const t=Math.min(rem,l.q); l.q-=t; rem-=t; } // FIFO solo para días de tenencia
+        p.lots = p.lots.filter(l=>l.q>1e-12);
+      }
+      const profA = s*pa - cA, profU = s*pu - cU;
+      p.realArs += profA; p.realUsd += profU;
+      p.qty -= s; p.costArs -= cA; p.costUsd -= cU;
+      if(p.qty<1e-9){ p.qty=0; p.costArs=0; p.costUsd=0; p.lots=[]; p.firstOpen=null; }
+      sales.push({id:o.id, ticker:o.ticker, date:o.date, qty:s, sellArs:pa, sellUsd:pu, avgArs:cA/s, avgUsd:cU/s, profArs:profA, profUsd:profU,
+                  pctArs: cA? profA/cA*100:0, pctUsd: cU? profU/cU*100:0, feeArs});
+    }else if(o.type==='div'){
+      const amtArs = (+o.price||0)*(o.cur==='USD'?ccl:1);
+      p.divArs += amtArs; p.divUsd += amtArs/ccl;
+    }
+  }
+  const ccl = M.ccl || cclAt(today());
+  const list = [...pos.values()];
+  const now = today();
+  list.forEach(p=>{
+    const div = ASSETS[p.asset]?.div||1;
+    p.avgArs = p.qty>0 ? p.costArs/p.qty*div : null;   // PPC en unidades de cotización (VN100 para bonos)
+    p.avgUsd = p.qty>0 ? p.costUsd/p.qty*div : null;
+    const q = quote(p.ticker, p.asset, p.cur);
+    p.q = q;
+    if(p.ticker==='USD' && p.asset==='liquidez'){ p.q = {p:ccl, pct:0, qcur:'ARS', unitArs:ccl, unitUsd:1}; }
+    if(p.ticker==='ARS' && p.asset==='liquidez'){ p.q = {p:1, pct:0, qcur:'ARS', unitArs:1, unitUsd:ccl?1/ccl:0}; }
+    const qq = p.q;
+    p.priceArs = qq ? qq.unitArs*div : null;
+    p.priceUsd = qq ? qq.unitUsd*div : null;
+    p.valueArs = qq ? p.qty*qq.unitArs : null;
+    p.valueUsd = qq ? p.qty*qq.unitUsd : null;
+    p.dayPct = qq?.pct ?? null;
+    p.pnlArs = qq && p.qty>0 ? p.valueArs - p.costArs : null;
+    p.pnlUsd = qq && p.qty>0 ? p.valueUsd - p.costUsd : null;
+    p.retArs = p.costArs>0 && qq ? (p.valueArs/p.costArs-1)*100 : null;
+    p.retUsd = p.costUsd>0 && qq ? (p.valueUsd/p.costUsd-1)*100 : null;
+    p.days = p.firstOpen ? daysBetween(p.firstOpen, now) : null;
+    const lq = p.lots.reduce((a,l)=>a+l.q,0);
+    p.wdays = lq>0 ? p.lots.reduce((a,l)=>a+l.q*daysBetween(l.date,now),0)/lq : null;
+    // CEDEAR: subyacente
+    if(p.asset==='cedear'){
+      const r = ratioOf(p.ticker); p.ratio = r;
+      const u = M.live.usa_stocks?.[underlyingOf(p.ticker)];
+      p.uPrice = u?.p ?? null; p.uPct = u?.pct ?? null;
+      p.uAvg = r && p.avgUsd!=null ? p.avgUsd*r.r : null;
+      p.implCCL = r && u?.p && qq ? (qq.unitArs*r.r)/u.p : null;
+    }else if(p.asset==='usa'){
+      p.uPrice = qq?.p ?? null; p.uPct = qq?.pct ?? null; p.uAvg = p.avgUsd;
+    }
+    const cfg = S.tickers[p.ticker]||{};
+    p.sl = +cfg.sl||null; p.tp = +cfg.tp||null; p.slBasis = cfg.slBasis||'local';
+    const ref = p.slBasis==='usa' ? p.uPrice : (qq?.p ?? null);
+    p.slHit = p.sl && ref!=null && p.qty>0 && ref<=p.sl;
+    p.tpHit = p.tp && ref!=null && p.qty>0 && ref>=p.tp;
+    p.rr = (p.sl && p.tp) ? (()=>{ const entry = p.slBasis==='usa' ? p.uAvg : (p.avgArs!=null && qq?.qcur==='USD' ? p.avgUsd : p.avgArs); if(!entry) return null; const risk = entry-p.sl, rew = p.tp-entry; return risk>0? rew/risk : null; })() : null;
+  });
+  const open = list.filter(p=>p.qty>0);
+  const totA = open.reduce((a,p)=>a+(p.valueArs||0),0), totU = open.reduce((a,p)=>a+(p.valueUsd||0),0);
+  open.forEach(p=>{ p.weight = totA>0 ? (p.valueArs||0)/totA*100 : 0; });
+  return {all:list, open, sales};
+}
+
+/* Totales (como el resumen de AMEBA: rendimiento excluye liquidez ARS/USD) */
+function totals(open){
+  let va=0,vu=0,ca=0,cu=0, nva=0,nvu=0,nca=0,ncu=0, dayA=0, missing=0;
+  open.forEach(p=>{
+    if(p.valueArs==null){ missing++; return; }
+    va+=p.valueArs; vu+=p.valueUsd; ca+=p.costArs; cu+=p.costUsd;
+    if(p.asset!=='liquidez'){ nva+=p.valueArs; nvu+=p.valueUsd; nca+=p.costArs; ncu+=p.costUsd; }
+    if(p.dayPct) dayA += p.valueArs - p.valueArs/(1+p.dayPct/100);
+  });
+  return {va,vu,ca,cu, pnlA:nva-nca, pnlU:nvu-ncu, retA: nca? (nva/nca-1)*100:0, retU: ncu? (nvu/ncu-1)*100:0,
+          dayA, dayPct: va-dayA? dayA/(va-dayA)*100 : 0, missing};
+}
+
+/* Rendimiento mensual (lógica de "Mi Rendimiento" de AMEBA):
+   r_mes = (V_fin - V_ini - neto_mes) / (V_ini + max(neto_mes,0))
+   neto_mes = compras - ventas (- dividendos cobrados, que salen de la cartera)
+   acumulado = Π(1+r) - 1, en ARS y en USD (V en USD = V ARS / CCL del mes) */
+async function monthlySeries(ops){
+  ops = ops.filter(o=>o.asset!=='liquidez');
+  if(!ops.length) return [];
+  const first = ops.reduce((a,o)=>o.date<a?o.date:a, ops[0].date);
+  const months=[]; let d = new Date(first.slice(0,7)+'-01T00:00:00');
+  const nowM = monthKey(today());
+  while(true){ const k = d.toISOString().slice(0,7); months.push(k); if(k>=nowM) break; d.setMonth(d.getMonth()+1); }
+  const tick = allTickersInfo().filter(t=>ops.some(o=>o.ticker===t.ticker));
+  const hist = {};
+  await Promise.all(tick.map(async t=>{ hist[t.ticker] = await monthlyHist(t.ticker, t.asset); }));
+  const spy = await monthlyHist('SPY','_spy');
+  const sorted = [...ops].sort((a,b)=>a.date<b.date?-1:1);
+  const qty = {}; const lastPx = {}; let i=0;
+  let prevA=0, prevU=0, accA=1, accU=1, accI=1, accS=1, accR=1;
+  const out=[];
+  for(const m of months){
+    const end = m===nowM ? today() : new Date(+m.slice(0,4), +m.slice(5,7), 0).toISOString().slice(0,10);
+    const cclM = m===nowM ? (M.ccl||cclAt(end)) : cclAt(end);
+    let net=0, netU=0, buys=0, sells=0;
+    while(i<sorted.length && monthKey(sorted[i].date)<=m){
+      const o = sorted[i++]; const ccl = +o.ccl || cclAt(o.date) || 1;
+      const amt = (+o.qty||0)*(+o.priceArs||0);
+      if(o.type==='buy'){ qty[o.ticker]=(qty[o.ticker]||0)+(+o.qty); net+=amt; netU+=amt/ccl; buys+=amt; }
+      else if(o.type==='sell'){ qty[o.ticker]=(qty[o.ticker]||0)-(+o.qty); net-=amt; netU-=amt/ccl; sells+=amt; }
+      else if(o.type==='div'){ const a=(+o.price||0)*(o.cur==='USD'?ccl:1); net-=a; netU-=a/ccl; }
+      if(o.type!=='div'){ lastPx[o.ticker] = {unitArs:+o.priceArs, ccl}; }
+    }
+    let V=0;
+    for(const t of tick){
+      const q = qty[t.ticker]||0; if(q<=1e-12) continue;
+      let unitArs = null;
+      if(m===nowM){ const qq = quote(t.ticker,t.asset,t.cur); if(qq) unitArs = qq.unitArs; }
+      if(unitArs==null){
+        const h = hist[t.ticker]||{}; let px = h[m];
+        if(px!=null){
+          const usd = ASSETS[t.asset]?.usd || t.cur==='USD';
+          unitArs = (usd ? px*cclM : px)/(ASSETS[t.asset]?.div||1);
+        }
+      }
+      if(unitArs==null && lastPx[t.ticker]) unitArs = lastPx[t.ticker].unitArs; // sin histórico: último precio operado
+      V += q*(unitArs||0);
+    }
+    const VU = cclM ? V/cclM : 0;
+    const denA = prevA + Math.max(net,0), denU = prevU + Math.max(netU,0);
+    const rA = denA>1e-6 ? (V-prevA-net)/denA*100 : null;
+    const rU = denU>1e-6 ? (VU-prevU-netU)/denU*100 : null;
+    if(rA!=null) accA *= 1+rA/100; if(rU!=null) accU *= 1+rU/100;
+    const inf = M.infl[m] ?? null; if(inf!=null) accI *= 1+inf/100;
+    const prevM = new Date(+m.slice(0,4), +m.slice(5,7)-2, 1).toISOString().slice(0,7);
+    let spyNow = m===nowM ? (M.live.usa_stocks?.SPY?.p ?? spy[m]) : spy[m];
+    const sR = (spyNow && spy[prevM]) ? (spyNow/spy[prevM]-1)*100 : null; if(sR!=null) accS *= 1+sR/100;
+    const real = (rA!=null && inf!=null) ? ((1+rA/100)/(1+inf/100)-1)*100 : null;
+    out.push({m, V, VU, net, netU, buys, sells, ccl:cclM, rA, rU, accA:(accA-1)*100, accU:(accU-1)*100, inf, accI:(accI-1)*100, spy:sR, accS:(accS-1)*100, real, partialInf: inf==null});
+    prevA=V; prevU=VU;
+  }
+  return out;
+}
+
+/* ---------------------------- UI helpers ---------------------------- */
+const $ = s => document.querySelector(s);
+let statusText = '';
+function setStatus(t){ statusText=t; const el=$('#status'); if(el) el.textContent=t; }
+function modal(html, onMount){
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-bg"><div class="modal">${html}</div></div>`;
+  const bg = root.firstChild;
+  bg.addEventListener('mousedown', e=>{ if(e.target===bg) closeModal(); });
+  onMount && onMount(bg.firstChild);
+}
+function closeModal(){ $('#modalRoot').innerHTML=''; }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+const C = () => S.prefs.currency;
+
+/* ---------------------------- Header ---------------------------- */
+function renderHeader(){
+  const sel = $('#pfSel');
+  sel.innerHTML = `<option value="all">Todos (consolidado)</option>` + S.portfolios.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  sel.value = S.prefs.pid;
+  document.querySelectorAll('#curSeg button').forEach(b=>b.classList.toggle('on', b.dataset.c===C()));
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.t===S.prefs.tab));
+  applyTheme();
+}
+function applyTheme(){
+  const t = S.prefs.theme;
+  const dark = t==='dark' || (t==='auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark?'dark':'light';
+}
+$('#pfSel').onchange = e => { S.prefs.pid = e.target.value; save(); render(); };
+$('#curSeg').onclick = e => { const c=e.target.dataset.c; if(c){ S.prefs.currency=c; save(); render(); } };
+$('#tabs').onclick = e => { const t=e.target.dataset.t; if(t){ S.prefs.tab=t; save(); render(); } };
+$('#refresh').onclick = () => refreshMarket(false);
+$('#addOp').onclick = () => opForm();
+$('#pfManage').onclick = () => portfolioManager();
+
+function render(){
+  renderHeader();
+  const t = S.prefs.tab;
+  const f = {cartera:renderCartera, rendimiento:renderRendimiento, heatmap:renderHeatmap, ventas:renderVentas,
+             operaciones:renderOps, desarb:renderDesarb, eventos:renderEventos, datos:renderDatos}[t] || renderCartera;
+  f();
+}
+
+/* ---------------------------- Cartera ---------------------------- */
+const COLS = [
+  {k:'ticker', l:'Ticker', g:'Instrumento', fixed:true},
+  {k:'asset', l:'Tipo', g:'Instrumento'},
+  {k:'ratio', l:'Ratio', g:'Instrumento'},
+  {k:'qty', l:'Cantidad', g:'Instrumento'},
+  {k:'avgArs', l:'Precio prom. ARS', g:'Precios'},
+  {k:'avgUsd', l:'Precio prom. USD', g:'Precios'},
+  {k:'underlyingAvgUSD', l:'Precio prom. subyacente USD', g:'Precios'},
+  {k:'price', l:'Precio actual', g:'Precios'},
+  {k:'underlyingPriceUSD', l:'Precio subyacente USA', g:'Precios'},
+  {k:'priceUsd', l:'Precio actual USD', g:'Precios'},
+  {k:'dayPct', l:'Var. hoy', g:'Rendimiento'},
+  {k:'underlyingVar', l:'Var. subyacente USA', g:'Rendimiento'},
+  {k:'retArs', l:'Rend. ARS', g:'Rendimiento'},
+  {k:'retUsd', l:'Rend. USD', g:'Rendimiento'},
+  {k:'pnl', l:'Ganancia', g:'Rendimiento'},
+  {k:'valueArs', l:'Valor posición ARS', g:'Posición'},
+  {k:'valueUsd', l:'Valor posición USD', g:'Posición'},
+  {k:'weight', l:'Tenencia %', g:'Posición'},
+  {k:'days', l:'Días tenencia', g:'Posición'},
+  {k:'wdays', l:'Tenencia prom.', g:'Posición'},
+  {k:'implCCL', l:'CCL implícito', g:'Posición'},
+  {k:'updated', l:'Última operación', g:'Control'},
+  {k:'tags', l:'Etiquetas', g:'Control'},
+  {k:'desc', l:'Descripción', g:'Control'},
+  {k:'sl', l:'Nivel pérdida', g:'Control'},
+  {k:'tp', l:'Nivel beneficio', g:'Control'},
+  {k:'rr', l:'R/B', g:'Control'},
+  {k:'commission', l:'Comisión total', g:'Control'},
+];
+function cellVal(p,k){
+  switch(k){
+    case 'ticker': return p.ticker; case 'asset': return p.asset; case 'ratio': return p.ratio?.r ?? null;
+    case 'qty': return p.qty; case 'avgArs': return p.avgArs; case 'avgUsd': return p.avgUsd;
+    case 'underlyingAvgUSD': return p.uAvg; case 'price': return p.q?.p ?? null; case 'underlyingPriceUSD': return p.uPrice;
+    case 'priceUsd': return p.priceUsd; case 'dayPct': return p.dayPct; case 'underlyingVar': return p.uPct;
+    case 'retArs': return p.retArs; case 'retUsd': return p.retUsd; case 'pnl': return C()==='USD'?p.pnlUsd:p.pnlArs;
+    case 'valueArs': return p.valueArs; case 'valueUsd': return p.valueUsd; case 'weight': return p.weight;
+    case 'days': return p.days; case 'wdays': return p.wdays; case 'implCCL': return p.implCCL; case 'updated': return p.lastDate;
+    case 'tags': return [...p.tags].join(','); case 'desc': return p.descs.join(' · '); case 'sl': return p.sl; case 'tp': return p.tp;
+    case 'rr': return p.rr; case 'commission': return p.feesArs;
+  }
+}
+function cellHtml(p,k){
+  const v = cellVal(p,k);
+  switch(k){
+    case 'ticker': return `<span class="tick" data-tick="${esc(p.ticker)}">${esc(p.ticker)}</span>${p.slHit?'<span class="badge sl">SL</span>':''}${p.tpHit?'<span class="badge tp">TP</span>':''}${p.q?'':'<span class="badge" title="Sin cotización: cargá un precio manual">s/p</span>'}`;
+    case 'asset': return `<span class="muted">${esc(ASSETS[p.asset]?.label.split(' ')[0]||p.asset)}</span>`;
+    case 'ratio': return p.ratio ? fmt(p.ratio.r, p.ratio.r%1?2:0)+(p.ratio.est?'<span class="badge" title="Estimado con precios de mercado. Configurálo en el ticker.">~</span>':'') : '—';
+    case 'qty': return fmt(v, v%1?4:0);
+    case 'avgArs': case 'price': return v==null?'—':(k==='price'&&p.q?.qcur==='USD'?'US$ ':'$ ')+fmt(v);
+    case 'avgUsd': case 'priceUsd': case 'underlyingAvgUSD': case 'underlyingPriceUSD': return v==null?'—':'US$ '+fmt(v);
+    case 'dayPct': case 'underlyingVar': case 'retArs': case 'retUsd': return `<span class="${cls(v)}">${pct(v)}</span>`;
+    case 'pnl': return `<span class="${cls(v)}">${money(v,C())}</span>`;
+    case 'valueArs': return money(v,'ARS'); case 'valueUsd': return money(v,'USD');
+    case 'weight': return pct(v).replace('+','');
+    case 'days': case 'wdays': return fmtDays(v);
+    case 'implCCL': return v==null?'—':'$ '+fmt(v);
+    case 'updated': return v||'—';
+    case 'tags': return [...p.tags].map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    case 'desc': return `<span class="muted">${esc(v)}</span>`;
+    case 'sl': case 'tp': return v==null?'—':fmt(v)+(p.slBasis==='usa'?' <span class="badge">USA</span>':'');
+    case 'rr': return v==null?'—':'1:'+fmt(v,1);
+    case 'commission': return money(v,'ARS');
+  }
+}
+function renderCartera(){
+  const {open, all} = buildPositions(opsInScope());
+  const T = totals(open);
+  const usd = C()==='USD';
+  const real = all.reduce((a,p)=>a+(usd?p.realUsd+p.divUsd:p.realArs+p.divArs),0);
+  const cols = COLS.filter(c=>c.fixed || !S.prefs.hiddenCols.includes(c.k));
+  const sk = S.prefs.sort;
+  const rows = [...open].sort((a,b)=>{ const x=cellVal(a,sk.key), y=cellVal(b,sk.key); if(x==null) return 1; if(y==null) return -1; return (typeof x==='string'? x.localeCompare(y) : x-y)*sk.dir; });
+  const filter = (S._filter||'').toLowerCase();
+  const shown = rows.filter(p=>!filter || p.ticker.toLowerCase().includes(filter) || [...p.tags].some(t=>t.toLowerCase().includes(filter)));
+  const lastBk = S.prefs.lastBackup, bkDays = lastBk ? daysBetween(lastBk, today()) : null;
+  const bkWarn = S.ops.length && (bkDays==null || bkDays>=7);
+  $('#main').innerHTML = `
+  ${bkWarn?`<div class="panel" style="border-color:var(--warn);display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="grow">⚠︎ ${bkDays==null?'Todavía no exportaste un respaldo':'Último respaldo hace '+bkDays+' días'}. Los datos viven solo en este dispositivo.</span><button class="btn sm" id="bkNow">Exportar respaldo</button></div>`:''}
+  <div class="cards">
+    <div class="card"><div class="lbl">Valor total</div><div class="val">${money(usd?T.vu:T.va, C())}</div><div class="sub">${usd?money(T.va,'ARS'):money(T.vu,'USD')} · CCL $ ${fmt(M.ccl)}</div></div>
+    <div class="card"><div class="lbl">Resultado no realizado</div><div class="val ${cls(usd?T.pnlU:T.pnlA)}">${money(usd?T.pnlU:T.pnlA, C())}</div><div class="sub ${cls(usd?T.retU:T.retA)}">${pct(usd?T.retU:T.retA)} sobre lo invertido</div></div>
+    <div class="card"><div class="lbl">Variación hoy</div><div class="val ${cls(T.dayA)}">${money(usd?T.dayA/(M.ccl||1):T.dayA, C())}</div><div class="sub ${cls(T.dayPct)}">${pct(T.dayPct)}</div></div>
+    <div class="card"><div class="lbl">Realizado + dividendos</div><div class="val ${cls(real)}">${money(real, C())}</div><div class="sub">Comisiones: ${money(all.reduce((a,p)=>a+p.feesArs,0),'ARS')}</div></div>
+    <div class="card" id="accCard"><div class="lbl">Rend. acumulado</div><div class="val muted">…</div><div class="sub">calculando vs inflación / S&amp;P 500</div></div>
+  </div>
+  <div class="panel">
+    <div class="toolbar">
+      <input id="flt" placeholder="Buscar ticker o etiqueta" value="${esc(S._filter||'')}" style="width:220px">
+      <button class="btn sm" id="colBtn">Columnas</button>
+      <span class="status grow" id="status">${esc(statusText)}</span>
+      ${T.missing?`<span class="badge" title="Posiciones sin cotización">${T.missing} sin precio</span>`:''}
+    </div>
+    ${open.length ? `<div class="tablewrap"><table>
+      <thead><tr>${cols.map(c=>`<th data-k="${c.k}" class="${c.k==='tags'||c.k==='desc'||c.k==='asset'?'l':''}">${c.l}${sk.key===c.k?(sk.dir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
+      <tbody>${shown.map(p=>`<tr>${cols.map(c=>`<td class="${c.k==='tags'||c.k==='desc'||c.k==='asset'?'l':''}">${cellHtml(p,c.k)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>` : `<div class="empty">Todavía no hay posiciones abiertas. Cargá tu primera operación con <b>+ Operación</b> o importá un CSV en <b>Datos</b>.</div>`}
+  </div>`;
+  $('#flt')?.addEventListener('input', e=>{ S._filter=e.target.value; const pos=e.target.selectionStart; renderCartera(); const f=$('#flt'); f.focus(); f.setSelectionRange(pos,pos); });
+  $('#colBtn')?.addEventListener('click', columnConfig);
+  $('#bkNow')?.addEventListener('click', exportBackup);
+  document.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; S.prefs.sort = {key:k, dir: sk.key===k ? -sk.dir : -1}; save(); renderCartera(); });
+  document.querySelectorAll('[data-tick]').forEach(el=>el.onclick=()=>tickerForm(el.dataset.tick));
+  // Rendimiento acumulado (asíncrono)
+  monthlySeries(opsInScope()).then(ser=>{
+    const el = $('#accCard'); if(!el || !ser.length) { if(el) el.querySelector('.val').textContent='—'; return; }
+    const l = ser[ser.length-1];
+    const acc = usd ? l.accU : l.accA;
+    const bench = usd ? l.accS : l.accI;
+    el.innerHTML = `<div class="lbl">Rend. acumulado (TWR)</div><div class="val ${cls(acc)}">${pct(acc)}</div>
+      <div class="sub">${usd?'S&amp;P 500':'Inflación'}: ${pct(bench)} · <span class="${cls(acc-bench)}">${usd?'vs S&amp;P':'real'} ${pct(usd? acc-bench : ((1+acc/100)/(1+bench/100)-1)*100)}</span></div>`;
+  });
+}
+function columnConfig(){
+  const groups = [...new Set(COLS.map(c=>c.g))];
+  modal(`<h3>Columnas visibles</h3>${groups.map(g=>`<div style="margin:10px 0 4px" class="hint">${g}</div><div class="colcfg">${COLS.filter(c=>c.g===g&&!c.fixed).map(c=>`<label><input type="checkbox" data-k="${c.k}" ${S.prefs.hiddenCols.includes(c.k)?'':'checked'}> ${c.l}</label>`).join('')}</div>`).join('')}
+  <div class="actions"><button class="btn pri" id="ok">Listo</button></div>`, m=>{
+    m.querySelectorAll('input[data-k]').forEach(i=>i.onchange=()=>{ const k=i.dataset.k; S.prefs.hiddenCols = i.checked ? S.prefs.hiddenCols.filter(x=>x!==k) : [...S.prefs.hiddenCols, k]; save(); });
+    m.querySelector('#ok').onclick=()=>{ closeModal(); render(); };
+  });
+}
+
+/* ---------------------------- Formulario de operación ---------------------------- */
+function opForm(op){
+  const e = op || {date:today(), type:'buy', asset:'cedear', cur:'ARS', pid: S.prefs.pid==='all' ? S.portfolios[0]?.id : S.prefs.pid, tags:[]};
+  const priceShown = op ? (op.cur==='USD' ? op.priceArs/(op.ccl||1) : op.priceArs)*(ASSETS[op.asset]?.div||1) : '';
+  modal(`<h3>${op?'Editar':'Nueva'} operación</h3>
+  <div class="grid2">
+    <label>Portfolio<select id="f_pid">${S.portfolios.map(p=>`<option value="${p.id}" ${p.id===e.pid?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+    <label>Tipo<select id="f_type"><option value="buy">Compra</option><option value="sell">Venta</option><option value="div">Dividendo / renta / cupón</option></select></label>
+    <label>Fecha<input type="date" id="f_date" value="${e.date}"></label>
+    <label>Activo<select id="f_asset">${Object.entries(ASSETS).map(([k,a])=>`<option value="${k}">${a.label}</option>`).join('')}</select></label>
+    <label>Ticker<input id="f_ticker" value="${esc(e.ticker||'')}" placeholder="AAPL, GGAL, AL30, BTC, USD…" list="tickList" autocapitalize="characters"></label>
+    <label>Moneda de la operación<select id="f_cur"><option>ARS</option><option>USD</option></select></label>
+    <label id="l_qty">Cantidad (nominales)<input type="number" step="any" id="f_qty" value="${e.qty??''}"></label>
+    <label id="l_price">Precio por unidad<input type="number" step="any" id="f_price" value="${op? +priceShown.toFixed(6) : ''}"></label>
+    <label>CCL de la fecha<input type="number" step="any" id="f_ccl" value="${e.ccl??''}"></label>
+    <label>Comisión total (en moneda de la op.)<input type="number" step="any" id="f_fee" value="${e.fee??''}"></label>
+    <label class="full">Etiquetas (separadas por coma)<input id="f_tags" value="${esc((e.tags||[]).join(', '))}"></label>
+    <label class="full">Descripción / nota<input id="f_desc" value="${esc(e.desc||'')}"></label>
+  </div>
+  <datalist id="tickList">${allTickersInfo().map(t=>`<option value="${esc(t.ticker)}">`).join('')}</datalist>
+  <p class="hint" id="f_hint"></p>
+  <div class="actions">${op?'<button class="btn danger" id="del">Eliminar</button>':''}<div class="grow"></div><button class="btn" id="cancel">Cancelar</button><button class="btn pri" id="ok">Guardar</button></div>`, m=>{
+    const g = id => m.querySelector('#'+id);
+    g('f_type').value = e.type; g('f_asset').value = e.asset; g('f_cur').value = e.cur;
+    const upd = () => {
+      const a = g('f_asset').value, t = g('f_type').value, tk = g('f_ticker').value.trim().toUpperCase();
+      if(ASSETS[a]?.usd) g('f_cur').value='USD';
+      g('l_qty').style.display = t==='div' ? 'none' : '';
+      g('l_price').firstChild.textContent = t==='div' ? 'Monto total cobrado' : (a==='bono' ? 'Precio cada 100 VN' : (a==='liquidez' ? (tk==='USD'?'Tipo de cambio pagado (ARS por USD)':'Precio (1)') : 'Precio por unidad'));
+      let hint = '';
+      if(a==='liquidez') hint = 'Liquidez: ticker ARS (precio 1) o USD (cantidad en dólares, precio = ARS pagados por dólar, en moneda ARS).';
+      if(!op && !g('f_ccl').value) { const c = cclAt(g('f_date').value); if(c) g('f_ccl').placeholder = 'auto: '+fmt(c); }
+      const q = tk && quote(tk, a, g('f_cur').value);
+      if(q) hint += ` Cotización actual: ${q.qcur==='USD'?'US$':'$'} ${fmt(q.p)}.`;
+      if(t==='sell' && tk){ const pos = buildPositions(S.ops.filter(o=>o.pid===g('f_pid').value && o.id!==op?.id)).all.find(p=>p.ticker===tk); hint += ` Tenencia disponible: ${fmt(pos?.qty||0,4)}.`; }
+      g('f_hint').textContent = hint;
+    };
+    ['f_asset','f_type','f_ticker','f_date','f_pid','f_cur'].forEach(id=>g(id).addEventListener('input',upd)); upd();
+    g('f_ticker').addEventListener('change', ()=>{ const t = allTickersInfo().find(x=>x.ticker===g('f_ticker').value.trim().toUpperCase()); if(t && !op){ g('f_asset').value=t.asset; g('f_cur').value=t.cur; upd(); } });
+    g('cancel').onclick = closeModal;
+    if(op) g('del').onclick = () => { if(confirm('¿Eliminar esta operación?')){ S.ops = S.ops.filter(o=>o.id!==op.id); save(); closeModal(); render(); } };
+    g('ok').onclick = () => {
+      const type = g('f_type').value, asset = g('f_asset').value, cur = g('f_cur').value;
+      const ticker = g('f_ticker').value.trim().toUpperCase();
+      const qty = type==='div' ? 0 : +g('f_qty').value;
+      const price = +g('f_price').value;
+      const date = g('f_date').value;
+      if(!ticker || !date || !(price>0) || (type!=='div' && !(qty>0))) return alert('Completá ticker, fecha, cantidad y precio.');
+      const ccl = +g('f_ccl').value || cclAt(date) || M.ccl;
+      if(!ccl) return alert('No hay CCL para esa fecha: ingresalo manualmente.');
+      const div = ASSETS[asset]?.div||1;
+      // Igual que AMEBA: se guarda el precio por unidad en ARS + el CCL de la fecha
+      const priceArs = type==='div' ? price : (cur==='USD' ? price*ccl : price)/div;
+      if(type==='sell'){
+        const pos = buildPositions(S.ops.filter(o=>o.pid===g('f_pid').value && o.id!==op?.id)).all.find(p=>p.ticker===ticker);
+        if(!pos || pos.qty+1e-9 < qty){ if(!confirm(`Estás vendiendo ${qty} pero la tenencia es ${fmt(pos?.qty||0,4)}. ¿Guardar igual?`)) return; }
+      }
+      const rec = {id: op?.id || uid(), pid:g('f_pid').value, date, type, ticker, asset, cur, qty, price, priceArs, ccl,
+        fee: +g('f_fee').value || 0, tags: g('f_tags').value.split(',').map(s=>s.trim()).filter(Boolean), desc: g('f_desc').value.trim()};
+      if(op) S.ops = S.ops.map(o=>o.id===op.id?rec:o); else S.ops.push(rec);
+      save(); closeModal();
+      if(!M.live[ASSETS[asset]?.live?.[0]] || asset==='cripto') refreshMarket(false); else render();
+    };
+  });
+}
+
+/* ---------------------------- Config de ticker ---------------------------- */
+function tickerForm(t){
+  const c = tcfg(t); const info = allTickersInfo().find(x=>x.ticker===t)||{};
+  const r = ratioOf(t);
+  modal(`<h3>${esc(t)} <span class="badge">${esc(ASSETS[info.asset]?.label||'')}</span></h3>
+  <div class="grid2">
+    ${info.asset==='cedear'?`<label>Ratio CEDEAR (ej. 20 o 20:1)<input id="t_ratio" value="${esc(c.ratio||'')}" placeholder="${r?('estimado '+r.r):''}"></label>
+    <label>Subyacente USA<input id="t_und" value="${esc(c.underlying||'')}" placeholder="${esc(underlyingOf(t))}"></label>`:''}
+    <label>Nivel de pérdida (stop loss)<input type="number" step="any" id="t_sl" value="${c.sl||''}"></label>
+    <label>Nivel de beneficio (take profit)<input type="number" step="any" id="t_tp" value="${c.tp||''}"></label>
+    <label>Base de SL/TP<select id="t_basis"><option value="local">Precio local</option><option value="usa">Subyacente USA</option></select></label>
+    <label>Precio manual (si no hay cotización)<input type="number" step="any" id="t_mp" value="${c.manualPrice||''}"></label>
+    <label>Moneda del precio manual<select id="t_mc"><option>ARS</option><option>USD</option></select></label>
+  </div>
+  <p class="hint">Los ajustes valen para todos los portfolios. Precio manual: para bonos/ON, cada 100 VN.</p>
+  <div class="actions"><button class="btn" id="ops">Ver operaciones</button><div class="grow"></div><button class="btn" id="cancel">Cancelar</button><button class="btn pri" id="ok">Guardar</button></div>`, m=>{
+    const g = id => m.querySelector('#'+id);
+    g('t_basis').value = c.slBasis||'local'; g('t_mc').value = c.manualCur||'ARS';
+    g('cancel').onclick = closeModal;
+    g('ops').onclick = () => { S._opFilter=t; S.prefs.tab='operaciones'; closeModal(); render(); };
+    g('ok').onclick = () => {
+      if(g('t_ratio')){ const rv = g('t_ratio').value.trim(); c.ratio = rv ? +rv.split(':')[0] : ''; c.underlying = g('t_und').value.trim().toUpperCase(); }
+      c.sl = g('t_sl').value; c.tp = g('t_tp').value; c.slBasis = g('t_basis').value; c.manualPrice = g('t_mp').value; c.manualCur = g('t_mc').value;
+      save(); closeModal(); render();
+    };
+  });
+}
+
+/* ---------------------------- Portfolios ---------------------------- */
+function portfolioManager(){
+  const counts = id => S.ops.filter(o=>o.pid===id).length;
+  modal(`<h3>Portfolios</h3>
+  <p class="hint">Separá estrategias o brokers. "Todos" consolida por ticker.</p>
+  <table><tbody>${S.portfolios.map(p=>`<tr><td class="l"><input data-id="${p.id}" value="${esc(p.name)}" style="width:100%"></td><td class="muted">${counts(p.id)} ops</td><td><button class="btn sm danger" data-del="${p.id}">Eliminar</button></td></tr>`).join('')}</tbody></table>
+  <div class="actions"><button class="btn" id="add">+ Nuevo portfolio</button><div class="grow"></div><button class="btn pri" id="ok">Listo</button></div>`, m=>{
+    m.querySelectorAll('input[data-id]').forEach(i=>i.onchange=()=>{ S.portfolios.find(p=>p.id===i.dataset.id).name = i.value.trim()||'Sin nombre'; save(); });
+    m.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.del; if(S.portfolios.length===1) return alert('Tiene que quedar al menos un portfolio.');
+      const n = counts(id);
+      if(n && !confirm(`Tiene ${n} operaciones. ¿Moverlas al primer portfolio restante y eliminarlo?`)) return;
+      S.portfolios = S.portfolios.filter(p=>p.id!==id);
+      S.ops.forEach(o=>{ if(o.pid===id) o.pid = S.portfolios[0].id; });
+      if(S.prefs.pid===id) S.prefs.pid='all'; save(); portfolioManager(); renderHeader();
+    });
+    m.querySelector('#add').onclick=()=>{ const name = prompt('Nombre del portfolio'); if(name){ S.portfolios.push({id:uid(), name}); save(); portfolioManager(); renderHeader(); } };
+    m.querySelector('#ok').onclick=()=>{ closeModal(); render(); };
+  });
+}
+
+/* ---------------------------- Rendimiento ---------------------------- */
+async function renderRendimiento(){
+  $('#main').innerHTML = `<div class="panel"><div class="empty">Calculando rendimiento mensual con precios históricos…</div></div>`;
+  if(!M.cclHist.length) await loadCCLHist();
+  if(!Object.keys(M.infl).length) await loadInflation();
+  const ser = await monthlySeries(opsInScope());
+  if(S.prefs.tab!=='rendimiento') return;
+  if(!ser.length){ $('#main').innerHTML = `<div class="panel"><div class="empty">Sin operaciones para calcular rendimiento.</div></div>`; return; }
+  const usd = C()==='USD';
+  const l = ser[ser.length-1];
+  const acc = usd? l.accU : l.accA, bench = usd ? l.accS : l.accI;
+  const realAcc = ((1+l.accA/100)/(1+l.accI/100)-1)*100;
+  const vals = ser.map(s=>usd?s.rU:s.rA).filter(v=>v!=null);
+  const best = Math.max(...vals), worst = Math.min(...vals), posM = vals.filter(v=>v>0).length;
+  $('#main').innerHTML = `
+  <div class="cards">
+    <div class="card"><div class="lbl">Rend. acumulado ${usd?'USD':'ARS'}</div><div class="val ${cls(acc)}">${pct(acc)}</div><div class="sub">desde ${ser[0].m}</div></div>
+    <div class="card"><div class="lbl">${usd?'S&amp;P 500 (SPY)':'Inflación acumulada'}</div><div class="val">${pct(bench)}</div><div class="sub ${cls(usd?acc-bench:realAcc)}">${usd?'Diferencia '+pct(acc-bench):'Rend. real '+pct(realAcc)}</div></div>
+    <div class="card"><div class="lbl">Meses positivos</div><div class="val">${posM}/${vals.length}</div><div class="sub">Mejor ${pct(best)} · Peor ${pct(worst)}</div></div>
+    <div class="card"><div class="lbl">Aportes netos acumulados</div><div class="val">${money(ser.reduce((a,s)=>a+(usd?s.netU:s.net),0), C())}</div><div class="sub">Valor actual ${money(usd?l.VU:l.V, C())}</div></div>
+  </div>
+  <div class="panel"><h2>Rendimiento acumulado</h2>
+    <div class="legend"><span><i style="background:var(--blue)"></i>Cartera ${usd?'USD':'ARS'}</span><span><i style="background:var(--orange)"></i>${usd?'S&amp;P 500':'Inflación'}</span>${usd?'':'<span><i style="background:var(--pos)"></i>Rend. real</span>'}</div>
+    ${lineChart(ser.map(s=>s.m), usd ? [{v:ser.map(s=>s.accU),c:'var(--blue)'},{v:ser.map(s=>s.accS),c:'var(--orange)'}]
+      : [{v:ser.map(s=>s.accA),c:'var(--blue)'},{v:ser.map(s=>s.accI),c:'var(--orange)'},{v:ser.map(s=>((1+s.accA/100)/(1+s.accI/100)-1)*100),c:'var(--pos)'}], true)}
+  </div>
+  <div class="panel"><h2>Rendimiento mensual</h2>
+    <div class="legend"><span><i style="background:var(--blue)"></i>Cartera</span><span><i style="background:var(--orange)"></i>${usd?'S&amp;P 500':'Inflación'}</span></div>
+    ${barChart(ser.map(s=>s.m), [ser.map(s=>usd?s.rU:s.rA), ser.map(s=>usd?s.spy:s.inf)], ['var(--blue)','var(--orange)'])}
+  </div>
+  <div class="panel"><h2>Evolución del valor vs. aportes</h2>
+    <div class="legend"><span><i style="background:var(--blue)"></i>Valor de la cartera</span><span><i style="background:var(--orange)"></i>Aportes acumulados</span></div>
+    ${lineChart(ser.map(s=>s.m), [{v:ser.map(s=>usd?s.VU:s.V),c:'var(--blue)'},{v:(()=>{let a=0;return ser.map(s=>a+=usd?s.netU:s.net);})(),c:'var(--orange)'}], false)}
+  </div>
+  <div class="panel"><h2>Detalle por mes</h2><div class="tablewrap"><table>
+    <thead><tr><th>Mes</th><th>Valor ${C()}</th><th>Aporte neto</th><th>CCL</th><th>Rend. ARS</th><th>Inflación</th><th>Real</th><th>Rend. USD</th><th>S&amp;P 500</th><th>Acum. ARS</th><th>Acum. USD</th></tr></thead>
+    <tbody>${[...ser].reverse().map(s=>`<tr><td>${s.m}</td><td>${money(usd?s.VU:s.V,C())}</td><td>${money(usd?s.netU:s.net,C())}</td><td>${fmt(s.ccl)}</td>
+      <td class="${cls(s.rA)}">${pct(s.rA)}</td><td>${s.inf==null?'<span class="muted">s/d</span>':pct(s.inf)}</td><td class="${cls(s.real)}">${pct(s.real)}</td>
+      <td class="${cls(s.rU)}">${pct(s.rU)}</td><td class="${cls(s.spy)}">${pct(s.spy)}</td><td class="${cls(s.accA)}">${pct(s.accA)}</td><td class="${cls(s.accU)}">${pct(s.accU)}</td></tr>`).join('')}</tbody>
+  </table></div>
+  <p class="hint">Método AMEBA: r = (Valor fin − Valor inicio − aporte neto) / (Valor inicio + aporte neto positivo); acumulado encadenado. Precios de cierre mensual (data912 / Binance), CCL de fin de mes (argentinadatos), inflación INDEC. El mes en curso usa precios en vivo.</p></div>`;
+}
+
+/* gráficos SVG sin dependencias */
+function lineChart(labels, series, isPct){
+  const W=900,H=260,pl=60,pr=12,pt=12,pb=28;
+  const all = series.flatMap(s=>s.v).filter(v=>v!=null&&isFinite(v)); if(!all.length) return '<div class="empty">Sin datos</div>';
+  let mn=Math.min(0,...all), mx=Math.max(0,...all); if(mx===mn) mx=mn+1;
+  const x=i=>pl+(labels.length<2?0:i*(W-pl-pr)/(labels.length-1)), y=v=>pt+(mx-v)*(H-pt-pb)/(mx-mn);
+  const ticks=5, grid=[...Array(ticks+1)].map((_,i)=>mn+(mx-mn)*i/ticks);
+  const step=Math.max(1,Math.ceil(labels.length/10));
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none" style="height:auto">
+    ${grid.map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${isPct?fmt(g,0)+'%':abbr(g)}</text>`).join('')}
+    <line x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/>
+    ${labels.map((l,i)=>i%step===0?`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${l.slice(2)}</text>`:'').join('')}
+    ${series.map(s=>{ let d='', pen=false; s.v.forEach((v,i)=>{ if(v==null||!isFinite(v)){pen=false;return;} d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; pen=true; }); return `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="2.2"/>`; }).join('')}
+  </svg>`;
+}
+function barChart(labels, series, colors){
+  const W=900,H=240,pl=50,pr=12,pt=12,pb=28;
+  const all = series.flat().filter(v=>v!=null&&isFinite(v)); if(!all.length) return '<div class="empty">Sin datos</div>';
+  let mn=Math.min(0,...all), mx=Math.max(0,...all); if(mx===mn) mx=mn+1;
+  const n=labels.length, bw=(W-pl-pr)/n, sb=bw*0.8/series.length;
+  const y=v=>pt+(mx-v)*(H-pt-pb)/(mx-mn);
+  const grid=[...Array(5)].map((_,i)=>mn+(mx-mn)*i/4), step=Math.max(1,Math.ceil(n/12));
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="height:auto">
+    ${grid.map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${fmt(g,0)}%</text>`).join('')}
+    <line x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)"/>
+    ${labels.map((l,i)=>series.map((s,j)=>{ const v=s[i]; if(v==null||!isFinite(v)) return ''; const x0=pl+i*bw+bw*0.1+j*sb; const y0=y(Math.max(v,0)), h=Math.abs(y(v)-y(0));
+      const col = j===0 ? (v>=0?'var(--pos)':'var(--neg)') : colors[j];
+      return `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${Math.max(1,sb-1).toFixed(1)}" height="${Math.max(.5,h).toFixed(1)}" fill="${col}" opacity="${j===0?1:.7}"><title>${l}: ${pct(v)}</title></rect>`; }).join('') + (i%step===0?`<text x="${pl+i*bw+bw/2}" y="${H-8}" text-anchor="middle">${l.slice(2)}</text>`:'')).join('')}
+  </svg>`;
+}
+const abbr = v => { const a=Math.abs(v); return a>=1e9?fmt(v/1e9,1)+'B':a>=1e6?fmt(v/1e6,1)+'M':a>=1e3?fmt(v/1e3,0)+'k':fmt(v,0); };
+
+/* ---------------------------- Mapa de calor ---------------------------- */
+function renderHeatmap(){
+  const {open} = buildPositions(opsInScope());
+  const metric = S.prefs.heatMetric;
+  const usd = C()==='USD';
+  const items = open.filter(p=>p.asset!=='liquidez' && p.valueArs).map(p=>({p, v: metric==='day'? p.dayPct : (usd? p.retUsd : p.retArs)}));
+  items.sort((a,b)=>b.p.valueArs-a.p.valueArs);
+  const tot = items.reduce((a,i)=>a+i.p.valueArs,0);
+  const color = v => { if(v==null) return '#475569'; const lim = metric==='day'?4:40; const t = Math.max(-1,Math.min(1,v/lim)); const a=Math.abs(t); return `hsl(${t>=0?142:0} ${10+65*a}% ${44-18*a}%)`; };
+  $('#main').innerHTML = `<div class="panel"><div class="toolbar"><h2 style="margin:0" class="grow">Mapa de calor</h2>
+    <div class="seg" id="hm"><button data-m="day" class="${metric==='day'?'on':''}">Variación hoy</button><button data-m="total" class="${metric==='total'?'on':''}">Rend. total ${C()}</button></div></div>
+    ${items.length?`<div class="heat">${items.map(i=>{ const w = i.p.valueArs/tot*100; return `<div data-tick="${esc(i.p.ticker)}" style="flex:${Math.max(w,1)} 1 ${Math.max(70, w*9)}px;background:${color(i.v)};min-height:${60+w*3}px" title="${esc(i.p.ticker)} · ${fmt(w,1)}% de la cartera">
+      <b>${esc(i.p.ticker)}</b><small>${pct(i.v)}<br>${fmt(w,1)}% · ${money(usd?i.p.valueUsd:i.p.valueArs,C())}</small></div>`; }).join('')}</div>`:'<div class="empty">Sin posiciones con cotización.</div>'}
+    <p class="hint">Tamaño = peso en la cartera. Color = ${metric==='day'?'variación del día':'rendimiento desde la compra'}.</p></div>`;
+  $('#hm').onclick = e => { const m=e.target.dataset.m; if(m){ S.prefs.heatMetric=m; save(); renderHeatmap(); } };
+  document.querySelectorAll('[data-tick]').forEach(el=>el.onclick=()=>tickerForm(el.dataset.tick));
+}
+
+/* ---------------------------- Ventas realizadas ---------------------------- */
+function renderVentas(){
+  const usd = C()==='USD';
+  const {sales, all} = buildPositions(opsInScope());
+  const range = S._salesRange || 'all';
+  const from = {all:'0000', year: new Date().getFullYear()+'-01-01', month: today().slice(0,8)+'01', quarter: new Date(Date.now()-90*864e5).toISOString().slice(0,10)}[range];
+  const sel = sales.filter(s=>s.date>=from).sort((a,b)=>a.date<b.date?1:-1);
+  const tot = sel.reduce((a,s)=>a+(usd?s.profUsd:s.profArs),0);
+  const divs = all.reduce((a,p)=>a+(usd?p.divUsd:p.divArs),0);
+  $('#main').innerHTML = `<div class="cards">
+    <div class="card"><div class="lbl">Ganancia realizada</div><div class="val ${cls(tot)}">${money(tot,C())}</div><div class="sub">${sel.length} ventas</div></div>
+    <div class="card"><div class="lbl">Dividendos / rentas (total)</div><div class="val">${money(divs,C())}</div></div>
+    <div class="card"><div class="lbl">Método de costo</div><div class="val" style="font-size:16px">${S.prefs.costMethod==='fifo'?'FIFO':'Precio promedio ponderado'}</div><div class="sub">Cambialo en Datos y preferencias</div></div>
+  </div>
+  <div class="panel"><div class="toolbar"><h2 style="margin:0" class="grow">Ventas realizadas</h2>
+    <select id="rng"><option value="all">Todo</option><option value="year">Este año</option><option value="quarter">Últimos 90 días</option><option value="month">Este mes</option></select></div>
+  ${sel.length?`<div class="tablewrap"><table><thead><tr><th>Ticker</th><th>Fecha</th><th>Cantidad</th><th>PPC ${C()}</th><th>Precio venta ${C()}</th><th>Ganancia ${C()}</th><th>%</th><th>Comisión ARS</th></tr></thead>
+  <tbody>${sel.map(s=>`<tr><td>${esc(s.ticker)}</td><td>${s.date}</td><td>${fmt(s.qty,s.qty%1?4:0)}</td><td>${money(usd?s.avgUsd:s.avgArs,C())}</td><td>${money(usd?s.sellUsd:s.sellArs,C())}</td>
+  <td class="${cls(usd?s.profUsd:s.profArs)}">${money(usd?s.profUsd:s.profArs,C())}</td><td class="${cls(usd?s.pctUsd:s.pctArs)}">${pct(usd?s.pctUsd:s.pctArs)}</td><td>${money(s.feeArs,'ARS')}</td></tr>`).join('')}</tbody></table></div>`
+  :'<div class="empty">No hay ventas en el período.</div>'}
+  <p class="hint">Precios por unidad (para bonos, por unidad nominal). Ganancia USD usa el CCL de cada compra y de la venta.</p></div>`;
+  $('#rng').value = range; $('#rng').onchange = e => { S._salesRange = e.target.value; renderVentas(); };
+}
+
+/* ---------------------------- Operaciones ---------------------------- */
+function renderOps(){
+  const f = (S._opFilter||'').toUpperCase();
+  const pname = id => S.portfolios.find(p=>p.id===id)?.name || '?';
+  const ops = opsInScope().filter(o=>!f || o.ticker.includes(f) || (o.tags||[]).some(t=>t.toUpperCase().includes(f))).sort((a,b)=>a.date<b.date?1:-1);
+  const tl = {buy:'Compra', sell:'Venta', div:'Dividendo'};
+  $('#main').innerHTML = `<div class="panel"><div class="toolbar"><h2 style="margin:0">Operaciones</h2><input id="of" placeholder="Filtrar ticker / etiqueta" value="${esc(S._opFilter||'')}"><span class="grow"></span><span class="muted">${ops.length} registros</span></div>
+  ${ops.length?`<div class="tablewrap"><table><thead><tr><th>Fecha</th><th class="l">Tipo</th><th class="l">Ticker</th><th class="l">Portfolio</th><th>Cantidad</th><th>Precio</th><th>Total ARS</th><th>CCL</th><th>Total USD</th><th>Comisión</th><th class="l">Etiquetas</th><th></th></tr></thead>
+  <tbody>${ops.map(o=>{ const tot = o.type==='div' ? o.priceArs*(o.cur==='USD'?o.ccl:1) : o.qty*o.priceArs; return `<tr><td>${o.date}</td><td class="l ${o.type==='sell'?'neg':o.type==='buy'?'pos':''}">${tl[o.type]}</td><td class="l"><b>${esc(o.ticker)}</b></td><td class="l muted">${esc(pname(o.pid))}</td>
+    <td>${o.type==='div'?'—':fmt(o.qty,o.qty%1?4:0)}</td><td>${o.cur==='USD'?'US$ ':'$ '}${fmt(o.price)}</td><td>${money(tot,'ARS')}</td><td>${fmt(o.ccl)}</td><td>${money(tot/(o.ccl||1),'USD')}</td><td>${o.fee?fmt(o.fee):'—'}</td>
+    <td class="l">${(o.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</td><td><button class="btn sm" data-ed="${o.id}">Editar</button></td></tr>`; }).join('')}</tbody></table></div>`
+  :'<div class="empty">Sin operaciones.</div>'}</div>`;
+  $('#of').oninput = e => { S._opFilter = e.target.value; const pos=e.target.selectionStart; renderOps(); const i=$('#of'); i.focus(); i.setSelectionRange(pos,pos); };
+  document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>opForm(S.ops.find(o=>o.id===b.dataset.ed)));
+}
+
+/* ---------------------------- Desarbitrajes ---------------------------- */
+/* AMEBA: CCL implícito de cada CEDEAR = precio ARS × ratio / precio USA; desvío vs. promedio del mercado. */
+function renderDesarb(){
+  const ced = M.live.arg_cedears||{}, usa = M.live.usa_stocks||{};
+  const held = new Set(buildPositions(opsInScope()).open.map(p=>p.ticker));
+  const rows = [];
+  for(const [t,x] of Object.entries(ced)){
+    if(/[DC]$/.test(t) && ced[t.slice(0,-1)]) continue; // ignorar especies D/C
+    const r = ratioOf(t); const u = usa[underlyingOf(t)];
+    if(!r || !u?.p || !x.p || !(x.v>0)) continue;
+    const bid = x.bid ? x.bid*r.r/u.p : null, ask = x.ask ? x.ask*r.r/u.p : null, last = x.p*r.r/u.p;
+    rows.push({t, ratio:r, last, bid, ask, px:x.p, u:u.p, vol:x.v, held:held.has(t)});
+  }
+  const valid = rows.filter(r=>r.last>0);
+  // promedio robusto (mediana) para no distorsionar con ratios mal estimados
+  const sortedL = valid.map(r=>r.last).sort((a,b)=>a-b); const med = sortedL[Math.floor(sortedL.length/2)]||M.ccl;
+  valid.forEach(r=>{ r.dev = (r.last/med-1)*100; });
+  const clean = valid.filter(r=>Math.abs(r.dev)<15 || !r.ratio.est);
+  const onlyHeld = S._arbHeld;
+  const list = clean.filter(r=>!onlyHeld||r.held).sort((a,b)=>a.dev-b.dev);
+  $('#main').innerHTML = `<div class="cards">
+    <div class="card"><div class="lbl">CCL de referencia (dolarapi)</div><div class="val">$ ${fmt(M.ccl)}</div></div>
+    <div class="card"><div class="lbl">CCL implícito mediano CEDEARs</div><div class="val">$ ${fmt(med)}</div><div class="sub">${clean.length} especies con volumen</div></div>
+  </div>
+  <div class="panel"><div class="toolbar"><h2 style="margin:0" class="grow">Desarbitrajes de CEDEARs</h2><label class="hint"><input type="checkbox" id="oh" ${onlyHeld?'checked':''}> Solo mi cartera</label></div>
+  ${M.live.arg_cedears?`<div class="tablewrap"><table><thead><tr><th>CEDEAR</th><th>Ratio</th><th>Precio ARS</th><th>Subyacente US$</th><th>CCL implícito</th><th>CCL compra (ask)</th><th>CCL venta (bid)</th><th>Desvío vs mediana</th></tr></thead>
+  <tbody>${list.map(r=>`<tr><td>${esc(r.t)}${r.held?'<span class="badge">en cartera</span>':''}</td><td>${fmt(r.ratio.r,r.ratio.r%1?2:0)}${r.ratio.est?'<span class="badge">~</span>':''}</td><td>$ ${fmt(r.px)}</td><td>US$ ${fmt(r.u)}</td><td>$ ${fmt(r.last)}</td><td>${r.ask?'$ '+fmt(r.ask):'—'}</td><td>${r.bid?'$ '+fmt(r.bid):'—'}</td>
+  <td class="${r.dev<0?'pos':'neg'}">${pct(r.dev)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Cargando precios…</div>'}
+  <p class="hint">Desvío negativo = CEDEAR "barato" (CCL implícito menor que el resto). Los ratios marcados con ~ se estiman redondeando precio USA × CCL / precio ARS; si conocés el ratio exacto configuralo tocando el ticker en Cartera. Se excluyen estimaciones con desvío &gt;15% (probable ratio mal estimado).</p></div>`;
+  $('#oh').onchange = e => { S._arbHeld = e.target.checked; renderDesarb(); };
+}
+
+/* ---------------------------- Ajustes de ratio (eventos) ---------------------------- */
+/* AMEBA: ante un cambio de ratio/split, multiplica cantidad × factor y divide precio ÷ factor
+   en las operaciones anteriores a la fecha efectiva (y permite revertir). */
+function renderEventos(){
+  const ev = [...S.ratioEvents].sort((a,b)=>a.date<b.date?1:-1);
+  $('#main').innerHTML = `<div class="panel"><div class="toolbar"><h2 style="margin:0" class="grow">Cambios de ratio / splits</h2><button class="btn pri" id="ne">+ Nuevo ajuste</button></div>
+  ${ev.length?`<div class="tablewrap"><table><thead><tr><th>Ticker</th><th>Fecha efectiva</th><th>Ratio anterior → nuevo</th><th>Factor</th><th>Ops afectadas</th><th class="l">Estado</th><th></th></tr></thead>
+  <tbody>${ev.map(e=>`<tr><td>${esc(e.ticker)}</td><td>${e.date}</td><td>${e.oldR||'—'} → ${e.newR||'—'}</td><td>×${fmt(e.factor,4)}</td><td>${e.affected?.length||0}</td><td class="l">${e.applied?'<span class="pos">Aplicado</span>':'<span class="muted">Revertido / pendiente</span>'}</td>
+  <td><button class="btn sm" data-tg="${e.id}">${e.applied?'Revertir':'Aplicar'}</button> <button class="btn sm danger" data-dl="${e.id}">✕</button></td></tr>`).join('')}</tbody></table></div>`
+  :'<div class="empty">Sin ajustes. Si un CEDEAR cambia de ratio (p. ej. 10:1 → 20:1) o hay un split, registralo acá para que cantidades y precios promedio queden comparables con la cotización nueva.</div>'}</div>`;
+  $('#ne').onclick = () => modal(`<h3>Nuevo ajuste de ratio</h3><div class="grid2">
+    <label>Ticker<input id="e_t" list="tl2"></label><label>Fecha efectiva<input type="date" id="e_d" value="${today()}"></label>
+    <label>Ratio anterior (ej. 10)<input type="number" step="any" id="e_o"></label><label>Ratio nuevo (ej. 20)<input type="number" step="any" id="e_n"></label>
+    <label class="full">o factor directo (cantidad × factor)<input type="number" step="any" id="e_f" placeholder="nuevo / anterior"></label></div>
+    <datalist id="tl2">${allTickersInfo().map(t=>`<option value="${esc(t.ticker)}">`).join('')}</datalist>
+    <p class="hint">Se aplica a todas las operaciones del ticker con fecha anterior a la efectiva. Si el ratio se registra en la config del ticker, también se actualiza.</p>
+    <div class="actions"><button class="btn" id="c">Cancelar</button><button class="btn pri" id="ok">Aplicar</button></div>`, m=>{
+      const g=id=>m.querySelector('#'+id); g('c').onclick=closeModal;
+      g('ok').onclick=()=>{ const t=g('e_t').value.trim().toUpperCase(), d=g('e_d').value, o=+g('e_o').value, n=+g('e_n').value;
+        const f = +g('e_f').value || (o>0&&n>0 ? n/o : 0);
+        if(!t||!d||!(f>0)) return alert('Completá ticker, fecha y ratios o factor.');
+        const e = {id:uid(), ticker:t, date:d, oldR:o||null, newR:n||null, factor:f, applied:false, affected:[]};
+        S.ratioEvents.push(e); toggleEvent(e); if(n>0 && S.tickers[t]?.ratio) S.tickers[t].ratio = n; save(); closeModal(); renderEventos(); };
+    });
+  document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=()=>{ toggleEvent(S.ratioEvents.find(e=>e.id===b.dataset.tg)); save(); renderEventos(); });
+  document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{ const e=S.ratioEvents.find(x=>x.id===b.dataset.dl); if(e.applied && !confirm('Está aplicado. ¿Revertir y eliminar?')) return; if(e.applied) toggleEvent(e); S.ratioEvents=S.ratioEvents.filter(x=>x!==e); save(); renderEventos(); });
+}
+function toggleEvent(e){
+  if(!e.applied){
+    e.affected = S.ops.filter(o=>o.ticker===e.ticker && o.date<e.date && o.type!=='div').map(o=>o.id);
+    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty*=e.factor; o.priceArs/=e.factor; o.price/=e.factor; } });
+    e.applied = true;
+  }else{
+    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty/=e.factor; o.priceArs*=e.factor; o.price*=e.factor; } });
+    e.applied = false;
+  }
+}
+
+/* ---------------------------- Datos y preferencias ---------------------------- */
+const CSV_COLS = ['fecha','portfolio','tipo','ticker','activo','moneda','cantidad','precio','ccl','comision','etiquetas','descripcion'];
+function renderDatos(){
+  $('#main').innerHTML = `
+  <div class="panel"><h2>Cómo usarla</h2><div class="hint" style="font-size:13px;line-height:1.6">
+    <b>Dónde quedan los datos:</b> solo en el navegador de cada dispositivo. La PC y el iPhone no se sincronizan solos: usá <i>Exportar respaldo</i> en uno e <i>Importar respaldo</i> en el otro (por mail, WhatsApp, iCloud Drive o OneDrive).<br>
+    <b>iPhone:</b> abrí el link en Safari → botón Compartir → <i>Agregar a pantalla de inicio</i>. Usala siempre desde ese ícono: tiene su propio almacenamiento, distinto del de Safari.<br>
+    <b>Windows 11:</b> abrí el link en Edge o Chrome → menú ⋯ → <i>Aplicaciones → Instalar este sitio como aplicación</i> para tenerla en el menú Inicio.<br>
+    <b>Cargar operaciones:</b> botón <i>+ Operación</i>, o en bloque con la plantilla CSV de abajo. Compras en dólares: elegí moneda USD; el CCL de la fecha se completa solo.<br>
+    <b>CEDEARs:</b> el ratio se estima solo; si no coincide con el real, tocá el ticker en Cartera y cargalo.<br>
+    <b>Precios:</b> data912 (BYMA con demora), dolarapi y argentinadatos (CCL e inflación INDEC), Binance (cripto). Si un activo no tiene cotización, cargale un precio manual desde el ticker.
+  </div></div>
+  <div class="panel"><h2>Preferencias</h2><div class="grid2" style="max-width:640px">
+    <label>Moneda por defecto<select id="p_cur"><option value="ARS">Pesos (ARS)</option><option value="USD">Dólar CCL</option></select></label>
+    <label>Método de costo en ventas<select id="p_cm"><option value="ppp">Precio promedio ponderado (AMEBA)</option><option value="fifo">FIFO</option></select></label>
+    <label>Tema<select id="p_th"><option value="auto">Automático (sistema)</option><option value="dark">Oscuro</option><option value="light">Claro</option></select></label>
+    <label>Auto-actualizar precios<select id="p_rf"><option value="0">No</option><option value="1">Cada 1 min</option><option value="5">Cada 5 min</option><option value="15">Cada 15 min</option></select></label>
+  </div></div>
+  <div class="panel"><h2>Respaldo</h2>
+    <p class="hint">Tus datos viven solo en este navegador. Exportá un respaldo seguido, y usalo para pasar la cartera entre la PC y el iPhone.</p>
+    <div class="toolbar"><button class="btn pri" id="exJ">Exportar respaldo (.json)</button><label class="btn">Importar respaldo<input type="file" id="imJ" accept=".json" hidden></label></div></div>
+  <div class="panel"><h2>Importar / exportar operaciones (CSV)</h2>
+    <p class="hint">Columnas: <code>${CSV_COLS.join(', ')}</code>. tipo = compra | venta | dividendo · activo = ${Object.keys(ASSETS).join(' | ')} · moneda = ARS | USD · fecha AAAA-MM-DD · decimales con punto. Si el CCL está vacío se toma el histórico. El precio es por unidad en la moneda indicada (bonos: cada 100 VN). Sirve para pasar exportaciones de cualquier broker con una planilla intermedia.</p>
+    <div class="toolbar"><button class="btn" id="tpl">Descargar plantilla</button><button class="btn" id="exC">Exportar operaciones</button><label class="btn pri">Importar CSV<input type="file" id="imC" accept=".csv,.txt" hidden></label></div></div>
+  <div class="panel"><h2>Zona peligrosa</h2><button class="btn danger" id="wipe">Borrar todos los datos</button></div>`;
+  const g = id => $('#'+id);
+  g('p_cur').value=S.prefs.currency; g('p_cm').value=S.prefs.costMethod; g('p_th').value=S.prefs.theme; g('p_rf').value=String(S.prefs.refreshMin);
+  g('p_cur').onchange=e=>{S.prefs.currency=e.target.value;save();renderHeader();};
+  g('p_cm').onchange=e=>{S.prefs.costMethod=e.target.value;save();};
+  g('p_th').onchange=e=>{S.prefs.theme=e.target.value;save();applyTheme();};
+  g('p_rf').onchange=e=>{S.prefs.refreshMin=+e.target.value;save();setupAuto();};
+  g('exJ').onclick=exportBackup;
+  g('imJ').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const d=JSON.parse(await f.text()); if(!Array.isArray(d.ops)||!Array.isArray(d.portfolios)) throw new Error('Formato inválido');
+    if(!confirm(`Reemplazar los datos actuales por el respaldo (${d.ops.length} operaciones)?`)) return; S={...defState(),...d,prefs:{...defState().prefs,...d.prefs}}; save(); render(); alert('Respaldo importado.'); }catch(err){ alert('No se pudo importar: '+err.message); } };
+  g('tpl').onclick=()=>download('plantilla-operaciones.csv', CSV_COLS.join(',')+'\n2025-03-10,Principal,compra,AAPL,cedear,ARS,10,15000,1200,50,"tech,largo plazo",\n2025-04-02,Principal,compra,AL30,bono,ARS,1000,72000,,,renta fija,\n2025-05-15,Principal,venta,AAPL,cedear,ARS,5,18000,,40,,toma parcial\n', 'text/csv');
+  g('exC').onclick=()=>{ const pn=id=>S.portfolios.find(p=>p.id===id)?.name||''; const tl={buy:'compra',sell:'venta',div:'dividendo'};
+    const q=v=>{v=String(v??''); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+    download(`operaciones-${today()}.csv`, CSV_COLS.join(',')+'\n'+S.ops.map(o=>[o.date,pn(o.pid),tl[o.type],o.ticker,o.asset,o.cur,o.qty,o.price,o.ccl,o.fee,(o.tags||[]).join(','),o.desc].map(q).join(',')).join('\n'), 'text/csv'); };
+  g('imC').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; importCSV(await f.text()); e.target.value=''; };
+  g('wipe').onclick=()=>{ if(confirm('¿Borrar TODAS las operaciones y preferencias? Exportá un respaldo antes.') && prompt('Escribí BORRAR para confirmar')==='BORRAR'){ S=defState(); save(); render(); } };
+}
+function exportBackup(){ S.prefs.lastBackup = today(); save(); download(`micartera-${today()}.json`, JSON.stringify(S,null,1), 'application/json'); render(); }
+function download(name, text, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+function parseCSV(text){
+  const sep = (text.split('\n')[0].match(/;/g)||[]).length > (text.split('\n')[0].match(/,/g)||[]).length ? ';' : ',';
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'&&text[i+1]==='"'){cur+='"';i++;} else if(c==='"') q=false; else cur+=c; }
+    else if(c==='"') q=true; else if(c===sep){ row.push(cur); cur=''; } else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(cur); rows.push(row); row=[]; cur=''; } else cur+=c; }
+  if(cur||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+async function importCSV(text){
+  if(!M.cclHist.length) await loadCCLHist();
+  const rows = parseCSV(text); const head = rows.shift().map(h=>h.trim().toLowerCase());
+  const ix = k => head.indexOf(k); const num = v => +String(v||'').replace(/\s/g,'').replace(/^\$/,'');
+  const tmap = {compra:'buy',buy:'buy',venta:'sell',sell:'sell',dividendo:'div',div:'div',renta:'div',cupon:'div'};
+  const added=[], errors=[];
+  rows.forEach((r,n)=>{
+    const get = k => (ix(k)>=0 ? r[ix(k)] : '').trim();
+    const type = tmap[get('tipo').toLowerCase()]; const ticker = get('ticker').toUpperCase(); const asset = (get('activo')||'cedear').toLowerCase();
+    const cur = (get('moneda')||'ARS').toUpperCase(); const date = get('fecha'); const qty=num(get('cantidad')), price=num(get('precio'));
+    if(!type||!ticker||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!(price>0)||(type!=='div'&&!(qty>0))||!ASSETS[asset]){ errors.push(n+2); return; }
+    let pname = get('portfolio') || S.portfolios[0].name; let p = S.portfolios.find(x=>x.name.toLowerCase()===pname.toLowerCase());
+    if(!p){ p={id:uid(), name:pname}; S.portfolios.push(p); }
+    const ccl = num(get('ccl')) || cclAt(date) || M.ccl; const div = ASSETS[asset].div;
+    added.push({id:uid(), pid:p.id, date, type, ticker, asset, cur, qty: type==='div'?0:qty, price, ccl, fee:num(get('comision'))||0,
+      priceArs: type==='div' ? price : (cur==='USD'?price*ccl:price)/div, tags:get('etiquetas').split(',').map(s=>s.trim()).filter(Boolean), desc:get('descripcion')});
+  });
+  if(!added.length) return alert('No se importó nada.'+(errors.length?' Filas con error: '+errors.join(', '):''));
+  if(!confirm(`Importar ${added.length} operaciones?`+(errors.length?`\nSe ignoran filas con error: ${errors.slice(0,20).join(', ')}`:''))) return;
+  S.ops.push(...added); save(); refreshMarket(false);
+}
+
+/* ---------------------------- Arranque ---------------------------- */
+let autoTimer=null;
+function setupAuto(){ clearInterval(autoTimer); if(S.prefs.refreshMin>0) autoTimer=setInterval(()=>{ if(!document.hidden) refreshMarket(false); }, S.prefs.refreshMin*60000); }
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+render();
+refreshMarket(true);
+setupAuto();
+</script>
+</body>
+</html>
