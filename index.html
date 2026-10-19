@@ -1145,7 +1145,9 @@ function applyData(d){
 
 async function sheetCall(method, params, body){
   const url = S.sync.url + (method==='GET' ? '?'+new URLSearchParams(params) : '');
-  const r = await fetch(url, method==='GET' ? {cache:'no-store'} : {method:'POST', body:JSON.stringify(body)}); // text/plain: sin preflight CORS
+  let r;
+  try{ r = await fetch(url, method==='GET' ? {cache:'no-store'} : {method:'POST', body:JSON.stringify(body)}); } // text/plain: sin preflight CORS
+  catch(e){ throw new Error('Google no dejó leer la planilla ("Failed to fetch"). Casi siempre es la configuración de la implementación: revisá la lista de abajo y abrí "Probar URL".'); }
   if(!r.ok) throw new Error('La planilla respondió '+r.status);
   let j; try{ j = await r.json(); }catch(e){ throw new Error('La URL no devuelve datos: revisá que sea la de la aplicación web (/exec) y que el acceso sea "Cualquier usuario".'); }
   if(j.error) throw new Error(j.error);
@@ -1210,7 +1212,9 @@ window.addEventListener('online', ()=>{ if(S.sync) syncNow(); });
 
 async function connectSheet(url, key){
   url = url.trim(); key = key.trim();
-  if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url)) throw new Error('La URL tiene que ser la de la aplicación web y terminar en /exec.');
+  url = url.replace(/[?#].*$/,'');
+  if(/\/dev$/.test(url)) throw new Error('Esa es la URL de prueba (/dev). Usá la de la implementación, que termina en /exec.');
+  if(!/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+\/|macros\/)s\/[^/]+\/exec$/.test(url)) throw new Error('La URL tiene que ser la de la aplicación web y terminar en /exec.');
   if(!key) throw new Error('Falta la clave.');
   const prev = S.sync;
   S.sync = {url, key, version:-1, sig:null};
@@ -1252,12 +1256,27 @@ function syncPanelHtml(){
     <div class="actions" style="justify-content:flex-start"><button class="btn pri" id="syGo">Conectar planilla</button></div>
     <p class="hint">Si este dispositivo ya tiene operaciones cargadas, se suben a la planilla y se combinan con lo que haya.</p>
     </details>`}
-    <p class="hint" id="syMsg"></p></div>`;
+    <p class="hint" id="syMsg"></p>
+    <div id="syHelp" hidden class="hint" style="font-size:13px;line-height:1.6;border:1px solid var(--warn);border-radius:10px;padding:10px 12px;margin-top:6px">
+      <b>Revisá en Apps Script → Implementar → Gestionar implementaciones:</b>
+      <ol class="steps">
+        <li><b>Quién tiene acceso: "Cualquier usuario"</b> (no "Cualquier usuario con cuenta de Google" ni "Solo yo"). Si tu cuenta es de una empresa (Google Workspace) y no aparece esa opción, el administrador lo bloquea: usá una cuenta de Gmail personal para la planilla.</li>
+        <li><b>Ejecutar como: "Yo"</b>.</li>
+        <li>La URL tiene que ser la de <b>Aplicación web</b>, terminada en <code>/exec</code> (no <code>/dev</code> ni la del editor).</li>
+        <li>Si cambiaste el código o la CLAVE después de implementar: <i>Gestionar implementaciones → lápiz → Versión: Nueva versión → Implementar</i>. Si no, Google sigue usando el código viejo.</li>
+        <li>Autorizá los permisos al implementar (aparece una ventana de Google la primera vez).</li>
+      </ol>
+      <a id="syTest" class="btn sm" target="_blank" rel="noopener" href="#">Probar URL en otra pestaña</a>
+      <span>Tiene que mostrar un texto que empieza con <code>{"version":</code>. Si muestra una página de inicio de sesión de Google, es el punto 1; si muestra "Clave incorrecta", la clave no coincide o falta el punto 4.</span>
+    </div></div>`;
 }
 function bindSyncPanel(){
   const g = id => document.getElementById(id), msg = t => { const m=g('syMsg'); if(m) m.textContent=t; };
   const copy = async (text, input) => { try{ await navigator.clipboard.writeText(text); msg('Copiado.'); }catch(e){ input?.select(); msg('Seleccionado: copialo con Ctrl+C / Copiar.'); } };
-  const go = async (url,key) => { msg('Conectando…'); try{ await connectSheet(url,key); renderDatos(); msg('Conectado. '+S.ops.length+' operaciones sincronizadas.'); render(); }catch(e){ msg('No se pudo conectar: '+e.message); } };
+  const help = (url,key) => { const b=g('syHelp'); if(!b) return; b.hidden=false; g('syTest').href = url.trim()+'?'+new URLSearchParams({key:key.trim(), since:''}); };
+  const go = async (url,key) => { msg('Conectando…'); g('syHelp') && (g('syHelp').hidden=true);
+    try{ await connectSheet(url,key); renderDatos(); msg('Conectado. '+S.ops.length+' operaciones sincronizadas.'); render(); }
+    catch(e){ msg('No se pudo conectar: '+e.message); if(/^https:/.test(url.trim())) help(url,key); } };
   g('syNow') && (g('syNow').onclick = ()=>syncNow({full:true}));
   g('syOff') && (g('syOff').onclick = ()=>{ if(confirm('¿Desconectar este dispositivo de la planilla? Los datos quedan en este dispositivo y en la planilla.')){ disconnectSheet(); renderDatos(); } });
   g('syCopy') && (g('syCopy').onclick = ()=>copy(g('syCode').value, g('syCode')));
