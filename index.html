@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mi Cartera">
+<meta name="apple-mobile-web-app-title" content="Gonza-Cositorto">
 <meta name="theme-color" content="#0b1220">
-<title>Mi Cartera</title>
+<title>Gonza-Cositorto</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -80,6 +80,10 @@ svg text{fill:var(--muted);font-size:11px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .status{font-size:12px;color:var(--muted)}
+#syncInd .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted);vertical-align:middle}
+#syncInd.ok .dot{background:var(--pos)} #syncInd.busy .dot{background:var(--warn)} #syncInd.err .dot{background:var(--neg)}
+textarea.code{width:100%;min-height:160px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre}
+ol.steps{margin:6px 0 0;padding-left:20px;line-height:1.7;font-size:13px}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 .colcfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
 .colcfg label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--text)}
@@ -94,11 +98,12 @@ svg text{fill:var(--muted);font-size:11px}
 </head>
 <body>
 <header>
-  <h1>MI <span>CARTERA</span></h1>
+  <h1>GONZA-<span>COSITORTO</span></h1>
   <select id="pfSel" title="Portfolio"></select>
   <button class="btn sm" id="pfManage">Portfolios</button>
   <div class="grow"></div>
   <div class="seg" id="curSeg"><button data-c="ARS">ARS</button><button data-c="USD">USD CCL</button></div>
+  <button class="btn sm" id="syncInd" hidden title="Sincronización con Google Sheets"></button>
   <button class="btn" id="refresh" title="Actualizar precios">⟳</button>
   <button class="btn pri" id="addOp">+ Operación</button>
 </header>
@@ -118,7 +123,7 @@ svg text{fill:var(--muted);font-size:11px}
 <script>
 'use strict';
 /* =========================================================================
-   Mi Cartera — reimplementación personal de la lógica de seguimiento de AMEBA.
+   GONZA-COSITORTO — reimplementación personal de la lógica de seguimiento de AMEBA.
    Todo vive en este archivo y en localStorage. Sin cuentas ni servidor.
    Fuentes de mercado públicas (CORS abiertos):
      - data912.com: precios live e históricos (acciones AR, CEDEARs, bonos, USA)
@@ -126,7 +131,8 @@ svg text{fill:var(--muted);font-size:11px}
      - api.binance.com: cripto
    ========================================================================= */
 
-const KEY = 'micartera-v1';
+const KEY = 'micartera-v1';   // se mantiene para conservar los datos ya cargados
+const APPS_SCRIPT = "/**\n * GONZA-COSITORTO \u00b7 sincronizaci\u00f3n con Google Sheets\n *\n * Peg\u00e1 este c\u00f3digo en la planilla: Extensiones \u2192 Apps Script \u2192 C\u00f3digo.gs.\n * Cambi\u00e1 CLAVE por una clave propia, guard\u00e1 y public\u00e1:\n * Implementar \u2192 Nueva implementaci\u00f3n \u2192 Tipo: Aplicaci\u00f3n web\n *   - Ejecutar como: Yo\n *   - Qui\u00e9n tiene acceso: Cualquier usuario\n * Copi\u00e1 la URL que termina en /exec y cargala en la app junto con la clave.\n */\nconst CLAVE = 'cambia-esta-clave';\n\nfunction doGet(e) {\n  const p = (e && e.parameter) || {};\n  if (p.key !== CLAVE) return json_({ error: 'Clave incorrecta' });\n  const v = version_();\n  if (p.since !== undefined && p.since !== '' && Number(p.since) === v) return json_({ version: v, unchanged: true });\n  return json_({ version: v, tables: read_() });\n}\n\nfunction doPost(e) {\n  let b;\n  try { b = JSON.parse(e.postData.contents); } catch (err) { return json_({ error: 'Pedido inv\u00e1lido' }); }\n  if (b.key !== CLAVE) return json_({ error: 'Clave incorrecta' });\n  const lock = LockService.getScriptLock();\n  lock.waitLock(30000);\n  try {\n    const v = version_();\n    // Otro dispositivo guard\u00f3 antes: devolvemos lo actual para que la app combine y reintente\n    if (Number(b.base) !== v) return json_({ conflict: true, version: v, tables: read_() });\n    write_(b.tables || {});\n    const nv = v + 1;\n    PropertiesService.getScriptProperties().setProperty('version', String(nv));\n    return json_({ version: nv });\n  } finally {\n    lock.releaseLock();\n  }\n}\n\n// Ediciones hechas a mano en la planilla: marcan la fila como actualizada y avisan a los dispositivos\nfunction onEdit(e) {\n  const sh = e.range.getSheet();\n  const lastCol = sh.getLastColumn();\n  if (lastCol > 0 && e.range.getRow() > 1) {\n    const head = sh.getRange(1, 1, 1, lastCol).getValues()[0];\n    const col = head.indexOf('actualizado');\n    const onlyThatCol = e.range.getNumColumns() === 1 && e.range.getColumn() === col + 1;\n    if (col >= 0 && !onlyThatCol) {\n      const n = e.range.getNumRows();\n      const now = Date.now();\n      sh.getRange(e.range.getRow(), col + 1, n, 1).setValues(Array.from({ length: n }, () => [now]));\n    }\n  }\n  const pr = PropertiesService.getScriptProperties();\n  pr.setProperty('version', String(Number(pr.getProperty('version') || 0) + 1));\n}\n\nfunction version_() {\n  return Number(PropertiesService.getScriptProperties().getProperty('version') || 0);\n}\n\nfunction read_() {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  const tz = ss.getSpreadsheetTimeZone();\n  const out = {};\n  ss.getSheets().forEach(function (sh) {\n    if (sh.getLastRow() === 0) return;\n    const vals = sh.getDataRange().getValues();\n    if (vals[0][0] === '') return;\n    out[sh.getName()] = vals.map(function (r) {\n      return r.map(function (c) { return c instanceof Date ? Utilities.formatDate(c, tz, 'yyyy-MM-dd') : c; });\n    });\n  });\n  return out;\n}\n\nfunction write_(tables) {\n  const ss = SpreadsheetApp.getActiveSpreadsheet();\n  Object.keys(tables).forEach(function (name) {\n    const t = tables[name];\n    const rows = t.rows;\n    if (!rows || !rows.length) return;\n    const w = rows[0].length;\n    const sh = ss.getSheetByName(name) || ss.insertSheet(name);\n    sh.clearContents();\n    (t.text || []).forEach(function (c) { sh.getRange(1, c + 1, rows.length, 1).setNumberFormat('@'); });\n    sh.getRange(1, 1, rows.length, w).setValues(rows);\n    sh.getRange(1, 1, 1, w).setFontWeight('bold');\n    sh.setFrozenRows(1);\n    if (t.hidden) sh.hideSheet();\n  });\n}\n\nfunction json_(o) {\n  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);\n}\n";
 const ASSETS = {
   accion_ar: {label:'Acción AR', live:['arg_stocks'], hist:'stocks', div:1},
   cedear:    {label:'CEDEAR', live:['arg_cedears'], hist:'cedears', div:1},
@@ -144,6 +150,8 @@ function defState(){
     ops:[],            // {id,pid,date,type:'buy'|'sell'|'div',ticker,asset,cur,qty,price,priceArs,ccl,fee,tags[],desc}
     tickers:{},        // ticker -> {ratio,underlying,sl,tp,slBasis,manualPrice,manualCur,color}
     ratioEvents:[],    // {id,ticker,date,factor,note,applied:bool,affected:[opIds]}
+    deleted:{},        // id -> timestamp de borrado (para sincronizar borrados entre dispositivos)
+    sync:null,         // {url,key,version} — conexión a Google Sheets de ESTE dispositivo
     prefs:{currency:'ARS', pid:'all', tab:'cartera', costMethod:'ppp', theme:'auto',
            hiddenCols:['underlyingAvgUSD','underlyingPriceUSD','underlyingVar','updated','desc','sl','tp','commission'],
            sort:{key:'valueArs',dir:-1}, refreshMin:0, heatMetric:'day'},
@@ -158,7 +166,9 @@ function load(){
     return {...d, ...s, prefs:{...d.prefs, ...(s.prefs||{})}};
   }catch(e){ return defState(); }
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ alert('No se pudo guardar: '+e.message); } }
+function saveLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ alert('No se pudo guardar: '+e.message); } }
+function save(){ saveLocal(); if(S.sync) schedulePush(); }
+const tomb = id => { (S.deleted ||= {})[id] = Date.now(); };
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 
 /* ---------------------------- Formato ---------------------------- */
@@ -599,7 +609,7 @@ function renderCartera(){
   const filter = (S._filter||'').toLowerCase();
   const shown = rows.filter(p=>!filter || p.ticker.toLowerCase().includes(filter) || [...p.tags].some(t=>t.toLowerCase().includes(filter)));
   const lastBk = S.prefs.lastBackup, bkDays = lastBk ? daysBetween(lastBk, today()) : null;
-  const bkWarn = S.ops.length && (bkDays==null || bkDays>=7);
+  const bkWarn = !S.sync && S.ops.length && (bkDays==null || bkDays>=7);
   $('#main').innerHTML = `
   ${bkWarn?`<div class="panel" style="border-color:var(--warn);display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="grow">⚠︎ ${bkDays==null?'Todavía no exportaste un respaldo':'Último respaldo hace '+bkDays+' días'}. Los datos viven solo en este dispositivo.</span><button class="btn sm" id="bkNow">Exportar respaldo</button></div>`:''}
   <div class="cards">
@@ -685,7 +695,7 @@ function opForm(op){
     ['f_asset','f_type','f_ticker','f_date','f_pid','f_cur'].forEach(id=>g(id).addEventListener('input',upd)); upd();
     g('f_ticker').addEventListener('change', ()=>{ const t = allTickersInfo().find(x=>x.ticker===g('f_ticker').value.trim().toUpperCase()); if(t && !op){ g('f_asset').value=t.asset; g('f_cur').value=t.cur; upd(); } });
     g('cancel').onclick = closeModal;
-    if(op) g('del').onclick = () => { if(confirm('¿Eliminar esta operación?')){ S.ops = S.ops.filter(o=>o.id!==op.id); save(); closeModal(); render(); } };
+    if(op) g('del').onclick = () => { if(confirm('¿Eliminar esta operación?')){ S.ops = S.ops.filter(o=>o.id!==op.id); tomb(op.id); save(); closeModal(); render(); } };
     g('ok').onclick = () => {
       const type = g('f_type').value, asset = g('f_asset').value, cur = g('f_cur').value;
       const ticker = g('f_ticker').value.trim().toUpperCase();
@@ -703,7 +713,7 @@ function opForm(op){
         if(!pos || pos.qty+1e-9 < qty){ if(!confirm(`Estás vendiendo ${qty} pero la tenencia es ${fmt(pos?.qty||0,4)}. ¿Guardar igual?`)) return; }
       }
       const rec = {id: op?.id || uid(), pid:g('f_pid').value, date, type, ticker, asset, cur, qty, price, priceArs, ccl,
-        fee: +g('f_fee').value || 0, tags: g('f_tags').value.split(',').map(s=>s.trim()).filter(Boolean), desc: g('f_desc').value.trim()};
+        fee: +g('f_fee').value || 0, tags: g('f_tags').value.split(',').map(s=>s.trim()).filter(Boolean), desc: g('f_desc').value.trim(), u:Date.now()};
       if(op) S.ops = S.ops.map(o=>o.id===op.id?rec:o); else S.ops.push(rec);
       save(); closeModal();
       if(!M.live[ASSETS[asset]?.live?.[0]] || asset==='cripto') refreshMarket(false); else render();
@@ -733,7 +743,7 @@ function tickerForm(t){
     g('ops').onclick = () => { S._opFilter=t; S.prefs.tab='operaciones'; closeModal(); render(); };
     g('ok').onclick = () => {
       if(g('t_ratio')){ const rv = g('t_ratio').value.trim(); c.ratio = rv ? +rv.split(':')[0] : ''; c.underlying = g('t_und').value.trim().toUpperCase(); }
-      c.sl = g('t_sl').value; c.tp = g('t_tp').value; c.slBasis = g('t_basis').value; c.manualPrice = g('t_mp').value; c.manualCur = g('t_mc').value;
+      c.sl = g('t_sl').value; c.tp = g('t_tp').value; c.slBasis = g('t_basis').value; c.manualPrice = g('t_mp').value; c.manualCur = g('t_mc').value; c.u = Date.now();
       save(); closeModal(); render();
     };
   });
@@ -746,16 +756,16 @@ function portfolioManager(){
   <p class="hint">Separá estrategias o brokers. "Todos" consolida por ticker.</p>
   <table><tbody>${S.portfolios.map(p=>`<tr><td class="l"><input data-id="${p.id}" value="${esc(p.name)}" style="width:100%"></td><td class="muted">${counts(p.id)} ops</td><td><button class="btn sm danger" data-del="${p.id}">Eliminar</button></td></tr>`).join('')}</tbody></table>
   <div class="actions"><button class="btn" id="add">+ Nuevo portfolio</button><div class="grow"></div><button class="btn pri" id="ok">Listo</button></div>`, m=>{
-    m.querySelectorAll('input[data-id]').forEach(i=>i.onchange=()=>{ S.portfolios.find(p=>p.id===i.dataset.id).name = i.value.trim()||'Sin nombre'; save(); });
+    m.querySelectorAll('input[data-id]').forEach(i=>i.onchange=()=>{ const pf = S.portfolios.find(p=>p.id===i.dataset.id); pf.name = i.value.trim()||'Sin nombre'; pf.u = Date.now(); save(); });
     m.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.del; if(S.portfolios.length===1) return alert('Tiene que quedar al menos un portfolio.');
       const n = counts(id);
       if(n && !confirm(`Tiene ${n} operaciones. ¿Moverlas al primer portfolio restante y eliminarlo?`)) return;
-      S.portfolios = S.portfolios.filter(p=>p.id!==id);
-      S.ops.forEach(o=>{ if(o.pid===id) o.pid = S.portfolios[0].id; });
+      S.portfolios = S.portfolios.filter(p=>p.id!==id); tomb(id);
+      S.ops.forEach(o=>{ if(o.pid===id){ o.pid = S.portfolios[0].id; o.u = Date.now(); } });
       if(S.prefs.pid===id) S.prefs.pid='all'; save(); portfolioManager(); renderHeader();
     });
-    m.querySelector('#add').onclick=()=>{ const name = prompt('Nombre del portfolio'); if(name){ S.portfolios.push({id:uid(), name}); save(); portfolioManager(); renderHeader(); } };
+    m.querySelector('#add').onclick=()=>{ const name = prompt('Nombre del portfolio'); if(name){ S.portfolios.push({id:uid(), name, u:Date.now()}); save(); portfolioManager(); renderHeader(); } };
     m.querySelector('#ok').onclick=()=>{ closeModal(); render(); };
   });
 }
@@ -946,19 +956,20 @@ function renderEventos(){
       g('ok').onclick=()=>{ const t=g('e_t').value.trim().toUpperCase(), d=g('e_d').value, o=+g('e_o').value, n=+g('e_n').value;
         const f = +g('e_f').value || (o>0&&n>0 ? n/o : 0);
         if(!t||!d||!(f>0)) return alert('Completá ticker, fecha y ratios o factor.');
-        const e = {id:uid(), ticker:t, date:d, oldR:o||null, newR:n||null, factor:f, applied:false, affected:[]};
-        S.ratioEvents.push(e); toggleEvent(e); if(n>0 && S.tickers[t]?.ratio) S.tickers[t].ratio = n; save(); closeModal(); renderEventos(); };
+        const e = {id:uid(), ticker:t, date:d, oldR:o||null, newR:n||null, factor:f, applied:false, affected:[], u:Date.now()};
+        S.ratioEvents.push(e); toggleEvent(e); if(n>0 && S.tickers[t]?.ratio){ S.tickers[t].ratio = n; S.tickers[t].u = Date.now(); } save(); closeModal(); renderEventos(); };
     });
   document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=()=>{ toggleEvent(S.ratioEvents.find(e=>e.id===b.dataset.tg)); save(); renderEventos(); });
-  document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{ const e=S.ratioEvents.find(x=>x.id===b.dataset.dl); if(e.applied && !confirm('Está aplicado. ¿Revertir y eliminar?')) return; if(e.applied) toggleEvent(e); S.ratioEvents=S.ratioEvents.filter(x=>x!==e); save(); renderEventos(); });
+  document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{ const e=S.ratioEvents.find(x=>x.id===b.dataset.dl); if(e.applied && !confirm('Está aplicado. ¿Revertir y eliminar?')) return; if(e.applied) toggleEvent(e); S.ratioEvents=S.ratioEvents.filter(x=>x!==e); tomb(e.id); save(); renderEventos(); });
 }
 function toggleEvent(e){
+  const now = Date.now(); e.u = now;
   if(!e.applied){
     e.affected = S.ops.filter(o=>o.ticker===e.ticker && o.date<e.date && o.type!=='div').map(o=>o.id);
-    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty*=e.factor; o.priceArs/=e.factor; o.price/=e.factor; } });
+    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty*=e.factor; o.priceArs/=e.factor; o.price/=e.factor; o.u=now; } });
     e.applied = true;
   }else{
-    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty/=e.factor; o.priceArs*=e.factor; o.price*=e.factor; } });
+    S.ops.forEach(o=>{ if(e.affected.includes(o.id)){ o.qty/=e.factor; o.priceArs*=e.factor; o.price*=e.factor; o.u=now; } });
     e.applied = false;
   }
 }
@@ -968,13 +979,14 @@ const CSV_COLS = ['fecha','portfolio','tipo','ticker','activo','moneda','cantida
 function renderDatos(){
   $('#main').innerHTML = `
   <div class="panel"><h2>Cómo usarla</h2><div class="hint" style="font-size:13px;line-height:1.6">
-    <b>Dónde quedan los datos:</b> solo en el navegador de cada dispositivo. La PC y el iPhone no se sincronizan solos: usá <i>Exportar respaldo</i> en uno e <i>Importar respaldo</i> en el otro (por mail, WhatsApp, iCloud Drive o OneDrive).<br>
+    <b>Dónde quedan los datos:</b> en el navegador de cada dispositivo. Para tenerlos iguales en la PC y el iPhone, conectá todos a la misma planilla de Google (sección de abajo). Sin planilla, usá <i>Exportar / Importar respaldo</i>.<br>
     <b>iPhone:</b> abrí el link en Safari → botón Compartir → <i>Agregar a pantalla de inicio</i>. Usala siempre desde ese ícono: tiene su propio almacenamiento, distinto del de Safari.<br>
     <b>Windows 11:</b> abrí el link en Edge o Chrome → menú ⋯ → <i>Aplicaciones → Instalar este sitio como aplicación</i> para tenerla en el menú Inicio.<br>
     <b>Cargar operaciones:</b> botón <i>+ Operación</i>, o en bloque con la plantilla CSV de abajo. Compras en dólares: elegí moneda USD; el CCL de la fecha se completa solo.<br>
     <b>CEDEARs:</b> el ratio se estima solo; si no coincide con el real, tocá el ticker en Cartera y cargalo.<br>
     <b>Precios:</b> data912 (BYMA con demora), dolarapi y argentinadatos (CCL e inflación INDEC), Binance (cripto). Si un activo no tiene cotización, cargale un precio manual desde el ticker.
   </div></div>
+  ${syncPanelHtml()}
   <div class="panel"><h2>Preferencias</h2><div class="grid2" style="max-width:640px">
     <label>Moneda por defecto<select id="p_cur"><option value="ARS">Pesos (ARS)</option><option value="USD">Dólar CCL</option></select></label>
     <label>Método de costo en ventas<select id="p_cm"><option value="ppp">Precio promedio ponderado (AMEBA)</option><option value="fifo">FIFO</option></select></label>
@@ -989,6 +1001,7 @@ function renderDatos(){
     <div class="toolbar"><button class="btn" id="tpl">Descargar plantilla</button><button class="btn" id="exC">Exportar operaciones</button><label class="btn pri">Importar CSV<input type="file" id="imC" accept=".csv,.txt" hidden></label></div></div>
   <div class="panel"><h2>Zona peligrosa</h2><button class="btn danger" id="wipe">Borrar todos los datos</button></div>`;
   const g = id => $('#'+id);
+  bindSyncPanel();
   g('p_cur').value=S.prefs.currency; g('p_cm').value=S.prefs.costMethod; g('p_th').value=S.prefs.theme; g('p_rf').value=String(S.prefs.refreshMin);
   g('p_cur').onchange=e=>{S.prefs.currency=e.target.value;save();renderHeader();};
   g('p_cm').onchange=e=>{S.prefs.costMethod=e.target.value;save();};
@@ -996,15 +1009,16 @@ function renderDatos(){
   g('p_rf').onchange=e=>{S.prefs.refreshMin=+e.target.value;save();setupAuto();};
   g('exJ').onclick=exportBackup;
   g('imJ').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const d=JSON.parse(await f.text()); if(!Array.isArray(d.ops)||!Array.isArray(d.portfolios)) throw new Error('Formato inválido');
-    if(!confirm(`Reemplazar los datos actuales por el respaldo (${d.ops.length} operaciones)?`)) return; S={...defState(),...d,prefs:{...defState().prefs,...d.prefs}}; save(); render(); alert('Respaldo importado.'); }catch(err){ alert('No se pudo importar: '+err.message); } };
+    if(!confirm(`Reemplazar los datos actuales por el respaldo (${d.ops.length} operaciones)?`)) return; const sy=S.sync; S={...defState(),...d,prefs:{...defState().prefs,...d.prefs}}; S.sync=sy; stampAll(); save(); render(); alert('Respaldo importado.'); }catch(err){ alert('No se pudo importar: '+err.message); } };
   g('tpl').onclick=()=>download('plantilla-operaciones.csv', CSV_COLS.join(',')+'\n2025-03-10,Principal,compra,AAPL,cedear,ARS,10,15000,1200,50,"tech,largo plazo",\n2025-04-02,Principal,compra,AL30,bono,ARS,1000,72000,,,renta fija,\n2025-05-15,Principal,venta,AAPL,cedear,ARS,5,18000,,40,,toma parcial\n', 'text/csv');
   g('exC').onclick=()=>{ const pn=id=>S.portfolios.find(p=>p.id===id)?.name||''; const tl={buy:'compra',sell:'venta',div:'dividendo'};
     const q=v=>{v=String(v??''); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
     download(`operaciones-${today()}.csv`, CSV_COLS.join(',')+'\n'+S.ops.map(o=>[o.date,pn(o.pid),tl[o.type],o.ticker,o.asset,o.cur,o.qty,o.price,o.ccl,o.fee,(o.tags||[]).join(','),o.desc].map(q).join(',')).join('\n'), 'text/csv'); };
   g('imC').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; importCSV(await f.text()); e.target.value=''; };
-  g('wipe').onclick=()=>{ if(confirm('¿Borrar TODAS las operaciones y preferencias? Exportá un respaldo antes.') && prompt('Escribí BORRAR para confirmar')==='BORRAR'){ S=defState(); save(); render(); } };
+  g('wipe').onclick=()=>{ if(confirm('¿Borrar TODAS las operaciones y preferencias de ESTE dispositivo? También se desconecta de la planilla (la planilla no se toca). Exportá un respaldo antes.') && prompt('Escribí BORRAR para confirmar')==='BORRAR'){ S=defState(); saveLocal(); render(); } };
 }
-function exportBackup(){ S.prefs.lastBackup = today(); save(); download(`micartera-${today()}.json`, JSON.stringify(S,null,1), 'application/json'); render(); }
+function exportBackup(){ S.prefs.lastBackup = today(); saveLocal(); download(`gonza-cositorto-${today()}.json`, JSON.stringify({...S, sync:undefined},null,1), 'application/json'); render(); }
+function stampAll(){ const now=Date.now(); [...S.ops, ...S.portfolios, ...S.ratioEvents].forEach(r=>r.u=now); Object.values(S.tickers).forEach(c=>c.u=now); }
 function download(name, text, type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 function parseCSV(text){
   const sep = (text.split('\n')[0].match(/;/g)||[]).length > (text.split('\n')[0].match(/,/g)||[]).length ? ';' : ',';
@@ -1027,14 +1041,229 @@ async function importCSV(text){
     const cur = (get('moneda')||'ARS').toUpperCase(); const date = get('fecha'); const qty=num(get('cantidad')), price=num(get('precio'));
     if(!type||!ticker||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!(price>0)||(type!=='div'&&!(qty>0))||!ASSETS[asset]){ errors.push(n+2); return; }
     let pname = get('portfolio') || S.portfolios[0].name; let p = S.portfolios.find(x=>x.name.toLowerCase()===pname.toLowerCase());
-    if(!p){ p={id:uid(), name:pname}; S.portfolios.push(p); }
+    if(!p){ p={id:uid(), name:pname, u:Date.now()}; S.portfolios.push(p); }
     const ccl = num(get('ccl')) || cclAt(date) || M.ccl; const div = ASSETS[asset].div;
     added.push({id:uid(), pid:p.id, date, type, ticker, asset, cur, qty: type==='div'?0:qty, price, ccl, fee:num(get('comision'))||0,
-      priceArs: type==='div' ? price : (cur==='USD'?price*ccl:price)/div, tags:get('etiquetas').split(',').map(s=>s.trim()).filter(Boolean), desc:get('descripcion')});
+      priceArs: type==='div' ? price : (cur==='USD'?price*ccl:price)/div, tags:get('etiquetas').split(',').map(s=>s.trim()).filter(Boolean), desc:get('descripcion'), u:Date.now()});
   });
   if(!added.length) return alert('No se importó nada.'+(errors.length?' Filas con error: '+errors.join(', '):''));
   if(!confirm(`Importar ${added.length} operaciones?`+(errors.length?`\nSe ignoran filas con error: ${errors.slice(0,20).join(', ')}`:''))) return;
   S.ops.push(...added); save(); refreshMarket(false);
+}
+
+
+/* ---------------------------- Sincronización con Google Sheets ----------------------------
+   La planilla tiene un Apps Script publicado como aplicación web (apps-script.gs).
+   - GET  ?key=…&since=versión  → {version, unchanged} o {version, tables}
+   - POST {key, base, tables}    → {version} o {conflict, version, tables}
+   Cada registro lleva "u" (última modificación) y los borrados quedan en "deleted";
+   al combinar gana la versión más nueva de cada registro, así varios dispositivos
+   pueden cargar datos al mismo tiempo sin pisarse. */
+const SY = { busy:false, again:false, timer:null, poll:null, status:'', err:null, last:null };
+const T_OPS = ['id','fecha','portfolio','tipo','ticker','activo','moneda','cantidad','precio','ccl','comision','precio_ars','etiquetas','descripcion','actualizado'];
+const T_PF  = ['id','nombre','actualizado'];
+const T_TK  = ['ticker','ratio','subyacente','stop_loss','take_profit','base_sl_tp','precio_manual','moneda_manual','actualizado'];
+const T_EV  = ['id','ticker','fecha','ratio_anterior','ratio_nuevo','factor','aplicado','ops_afectadas','actualizado'];
+const T_DEL = ['id','borrado'];
+const TIPO_OUT = {buy:'compra', sell:'venta', div:'dividendo'}, TIPO_IN = {compra:'buy', venta:'sell', dividendo:'div', buy:'buy', sell:'sell', div:'div'};
+const nOr = (v,d='') => (v===''||v==null||!isFinite(+v)) ? d : +v;
+const sOr = v => v==null ? '' : String(v);
+
+function dataOf(src){ return {portfolios:src.portfolios||[], ops:src.ops||[], tickers:src.tickers||{}, ratioEvents:src.ratioEvents||[], deleted:src.deleted||{}}; }
+function toTables(d){
+  const pname = id => d.portfolios.find(p=>p.id===id)?.name || '';
+  const byId = (a,b)=> a.id<b.id?-1:a.id>b.id?1:0;
+  const ops = [...d.ops].sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:byId(a,b)).map(o=>[
+    o.id, o.date, pname(o.pid), TIPO_OUT[o.type]||o.type, o.ticker, o.asset, o.cur, nOr(o.qty,0), nOr(o.price,0), nOr(o.ccl,0), nOr(o.fee,0),
+    nOr(o.priceArs,0), (o.tags||[]).join(', '), sOr(o.desc), nOr(o.u,0)]);
+  const pf = [...d.portfolios].sort(byId).map(p=>[p.id, sOr(p.name), nOr(p.u,0)]);
+  const tk = Object.keys(d.tickers).sort().filter(t=>{ const c=d.tickers[t]; return c && (c.ratio||c.underlying||c.sl||c.tp||c.manualPrice||c.u); }).map(t=>{ const c=d.tickers[t];
+    return [t, nOr(c.ratio), sOr(c.underlying), nOr(c.sl), nOr(c.tp), c.slBasis||'local', nOr(c.manualPrice), c.manualCur||'ARS', nOr(c.u,0)]; });
+  const ev = [...d.ratioEvents].sort(byId).map(e=>[e.id, e.ticker, e.date, nOr(e.oldR), nOr(e.newR), nOr(e.factor,1), e.applied?'si':'no', (e.affected||[]).join(','), nOr(e.u,0)]);
+  const del = Object.keys(d.deleted).sort().map(k=>[k, nOr(d.deleted[k],0)]);
+  return {
+    'Operaciones': {rows:[T_OPS, ...ops], text:[0,1,2,3,4,5,6,12,13]},
+    'Portfolios':  {rows:[T_PF, ...pf], text:[0,1]},
+    'Tickers':     {rows:[T_TK, ...tk], text:[0,2,5,7]},
+    'Eventos':     {rows:[T_EV, ...ev], text:[0,1,2,6,7]},
+    '_Borrados':   {rows:[T_DEL, ...del], text:[0], hidden:true},
+  };
+}
+// Firma estable para saber si dos estados son iguales una vez escritos en la planilla
+const sig = d => JSON.stringify(Object.entries(toTables(d)).map(([k,t])=>[k, t.rows.map(r=>r.map(c=>String(c)))]));
+
+function fromTables(tb){
+  const rowsOf = (name, head) => {
+    const t = tb[name]; if(!t || !t.length) return [];
+    const hd = t[0].map(x=>String(x).trim().toLowerCase());
+    return t.slice(1).filter(r=>r.some(c=>c!==''&&c!=null)).map(r=>{ const o={}; head.forEach(k=>{ const i=hd.indexOf(k); o[k] = i>=0 ? r[i] : ''; }); return o; });
+  };
+  let fixed = false;
+  const portfolios = rowsOf('Portfolios', T_PF).map(r=>{ if(!r.id){ fixed=true; } return {id: sOr(r.id)||uid(), name: sOr(r.nombre)||'Sin nombre', u: nOr(r.actualizado,0)}; });
+  const byName = n => { n = sOr(n).trim(); let p = portfolios.find(x=>x.name.toLowerCase()===n.toLowerCase()) || portfolios.find(x=>x.id===n);
+    if(!p){ p = {id:uid(), name:n||'Principal', u:Date.now()}; portfolios.push(p); fixed=true; } return p.id; };
+  const ops = rowsOf('Operaciones', T_OPS).map(r=>{
+    const type = TIPO_IN[sOr(r.tipo).trim().toLowerCase()] || 'buy';
+    const asset = ASSETS[sOr(r.activo).trim()] ? sOr(r.activo).trim() : 'cedear';
+    const cur = sOr(r.moneda).trim().toUpperCase()==='USD' ? 'USD' : 'ARS';
+    const date = sOr(r.fecha).slice(0,10);
+    const price = nOr(r.precio,0);
+    let ccl = nOr(r.ccl,0); if(!ccl){ ccl = cclAt(date) || M.ccl || 0; fixed = true; }
+    let priceArs = nOr(r.precio_ars,0);
+    if(!priceArs && price){ priceArs = type==='div' ? price : (cur==='USD'?price*ccl:price)/(ASSETS[asset]?.div||1); fixed = true; }
+    if(!r.id) fixed = true;
+    return {id: sOr(r.id)||uid(), pid: byName(r.portfolio), date, type, ticker: sOr(r.ticker).trim().toUpperCase(), asset, cur,
+      qty: type==='div'?0:nOr(r.cantidad,0), price, priceArs, ccl, fee: nOr(r.comision,0),
+      tags: sOr(r.etiquetas).split(',').map(s=>s.trim()).filter(Boolean), desc: sOr(r.descripcion), u: nOr(r.actualizado,0)};
+  }).filter(o=>o.ticker && /^\d{4}-\d{2}-\d{2}$/.test(o.date));
+  const tickers = {};
+  rowsOf('Tickers', T_TK).forEach(r=>{ const t = sOr(r.ticker).trim().toUpperCase(); if(!t) return;
+    tickers[t] = {ratio:nOr(r.ratio), underlying:sOr(r.subyacente), sl:nOr(r.stop_loss), tp:nOr(r.take_profit), slBasis:sOr(r.base_sl_tp)||'local',
+      manualPrice:nOr(r.precio_manual), manualCur:sOr(r.moneda_manual)||'ARS', u:nOr(r.actualizado,0)}; });
+  const ratioEvents = rowsOf('Eventos', T_EV).map(r=>({id:sOr(r.id)||uid(), ticker:sOr(r.ticker).toUpperCase(), date:sOr(r.fecha).slice(0,10),
+    oldR:nOr(r.ratio_anterior,null), newR:nOr(r.ratio_nuevo,null), factor:nOr(r.factor,1), applied:sOr(r.aplicado)==='si',
+    affected:sOr(r.ops_afectadas).split(',').map(s=>s.trim()).filter(Boolean), u:nOr(r.actualizado,0)}));
+  const deleted = {}; rowsOf('_Borrados', T_DEL).forEach(r=>{ if(r.id) deleted[sOr(r.id)] = nOr(r.borrado,0); });
+  return {data:{portfolios, ops, tickers, ratioEvents, deleted}, fixed};
+}
+
+function mergeData(a, b){
+  const deleted = {...a.deleted}; for(const k in b.deleted) deleted[k] = Math.max(deleted[k]||0, b.deleted[k]);
+  const alive = r => !(deleted[r.id] >= (r.u||0));
+  const mArr = (x,y) => { const m = new Map(); [...x,...y].forEach(r=>{ const c=m.get(r.id); if(!c || (r.u||0)>(c.u||0)) m.set(r.id,r); }); return [...m.values()].filter(alive); };
+  const tickers = {...b.tickers}; for(const t in a.tickers){ if(!tickers[t] || (a.tickers[t].u||0) >= (tickers[t].u||0)) tickers[t] = a.tickers[t]; }
+  // tombstones de más de 180 días ya no hacen falta
+  const old = Date.now()-180*864e5; for(const k in deleted) if(deleted[k] < old) delete deleted[k];
+  return {portfolios: mArr(a.portfolios,b.portfolios), ops: mArr(a.ops,b.ops), tickers, ratioEvents: mArr(a.ratioEvents,b.ratioEvents), deleted};
+}
+function applyData(d){
+  S.portfolios = d.portfolios.length ? d.portfolios : [{id:'p1', name:'Principal', u:0}];
+  S.ops = d.ops; S.tickers = d.tickers; S.ratioEvents = d.ratioEvents; S.deleted = d.deleted;
+  if(S.prefs.pid!=='all' && !S.portfolios.some(p=>p.id===S.prefs.pid)) S.prefs.pid = 'all';
+  saveLocal();
+}
+
+async function sheetCall(method, params, body){
+  const url = S.sync.url + (method==='GET' ? '?'+new URLSearchParams(params) : '');
+  const r = await fetch(url, method==='GET' ? {cache:'no-store'} : {method:'POST', body:JSON.stringify(body)}); // text/plain: sin preflight CORS
+  if(!r.ok) throw new Error('La planilla respondió '+r.status);
+  let j; try{ j = await r.json(); }catch(e){ throw new Error('La URL no devuelve datos: revisá que sea la de la aplicación web (/exec) y que el acceso sea "Cualquier usuario".'); }
+  if(j.error) throw new Error(j.error);
+  return j;
+}
+function setSync(status, err){ SY.status = status; SY.err = err||null; renderSyncInd(); const el=$('#syncStatus'); if(el) el.textContent = syncText(); }
+function syncText(){ if(!S.sync) return 'Sin conectar'; if(SY.err) return 'Error: '+SY.err; if(SY.status==='busy') return 'Sincronizando…';
+  return SY.last ? 'Sincronizado '+SY.last.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) : 'Conectado'; }
+function renderSyncInd(){
+  const b = $('#syncInd'); if(!b) return;
+  b.hidden = !S.sync; if(!S.sync) return;
+  b.className = 'btn sm ' + (SY.err?'err':SY.status==='busy'?'busy':'ok');
+  b.innerHTML = '<span class="dot"></span>'+(SY.err?'Sin sincronizar':SY.status==='busy'?'Sincronizando':'Planilla');
+  b.title = syncText();
+}
+function schedulePush(){ clearTimeout(SY.timer); SY.timer = setTimeout(()=>syncNow(), 1200); }
+
+async function syncNow(opts={}){
+  if(!S.sync) return;
+  if(SY.busy){ SY.again = true; return; }
+  SY.busy = true; setSync('busy');
+  try{
+    if(!M.cclHist.length) await loadCCLHist();
+    let ver = S.sync.version ?? -1;
+    let remote = null;
+    const r = await sheetCall('GET', {key:S.sync.key, since: opts.full ? '' : ver});
+    if(!r.unchanged){ remote = fromTables(r.tables||{}); ver = r.version; }
+    for(let attempt=0; attempt<4; attempt++){
+      const local = dataOf(S);
+      let target = local, remoteSig;
+      if(remote){
+        target = mergeData(local, remote.data);
+        remoteSig = remote.fixed ? null : sig(remote.data);
+        const changedLocal = sig(target) !== sig(local);
+        applyData(target);
+        if(changedLocal) render();
+      }else{
+        remoteSig = S.sync.sig;
+      }
+      S.sync.version = ver;
+      const mySig = sig(target);
+      if(mySig === remoteSig){ S.sync.sig = mySig; break; }   // planilla y dispositivo ya coinciden
+      const w = await sheetCall('POST', null, {key:S.sync.key, base:ver, tables:toTables(target)});
+      if(w.conflict){ remote = fromTables(w.tables||{}); ver = w.version; continue; }
+      S.sync.version = w.version; S.sync.sig = mySig; break;
+    }
+    saveLocal(); SY.last = new Date(); setSync('ok');
+  }catch(e){
+    setSync('err', e.message||String(e));
+  }finally{
+    SY.busy = false;
+    if(SY.again){ SY.again = false; syncNow(); }
+  }
+}
+function startPolling(){
+  clearInterval(SY.poll);
+  if(!S.sync) return;
+  SY.poll = setInterval(()=>{ if(!document.hidden) syncNow(); }, 30000);
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && S.sync) syncNow(); });
+window.addEventListener('online', ()=>{ if(S.sync) syncNow(); });
+
+async function connectSheet(url, key){
+  url = url.trim(); key = key.trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url)) throw new Error('La URL tiene que ser la de la aplicación web y terminar en /exec.');
+  if(!key) throw new Error('Falta la clave.');
+  const prev = S.sync;
+  S.sync = {url, key, version:-1, sig:null};
+  try{ await sheetCall('GET', {key, since:''}); }
+  catch(e){ S.sync = prev; throw e; }
+  saveLocal(); startPolling(); await syncNow({full:true});
+  if(SY.err) throw new Error(SY.err);
+}
+function disconnectSheet(){ S.sync = null; clearInterval(SY.poll); saveLocal(); setSync(''); }
+const connCode = () => btoa(JSON.stringify({u:S.sync.url, k:S.sync.key}));
+function parseConnCode(c){ try{ const o = JSON.parse(atob(c.trim())); if(o.u && o.k) return o; }catch(e){} return null; }
+
+function syncPanelHtml(){
+  const on = !!S.sync;
+  return `<div class="panel" id="syncPanel"><h2>Sincronizar con Google Sheets</h2>
+  ${on ? `<p class="hint">Este dispositivo está conectado a la planilla. Cada cambio se guarda ahí y los demás dispositivos conectados lo reciben en menos de un minuto.</p>
+    <div class="toolbar"><span class="badge" id="syncStatus" style="font-size:12px">${esc(syncText())}</span><span class="grow"></span>
+      <button class="btn" id="syNow">Sincronizar ahora</button><button class="btn danger" id="syOff">Desconectar</button></div>
+    <div class="field" style="margin-top:8px">Código para conectar otro dispositivo (iPhone o PC)
+      <div class="toolbar" style="margin:4px 0 0"><input id="syCode" readonly value="${esc(connCode())}" style="flex:1;min-width:0"><button class="btn" id="syCopy">Copiar código</button></div></div>
+    <p class="hint">Mandá este código por WhatsApp o mail. En el otro dispositivo: abrí la app (en iPhone, desde el ícono de la pantalla de inicio) → Datos y preferencias → pegá el código → Conectar. Tratalo como una contraseña: quien lo tenga puede ver y modificar la cartera.</p>`
+  : `<p class="hint">Conectá una planilla de Google para que todo lo que se cargue quede guardado ahí y se actualice solo en la PC y en el iPhone.</p>
+    <div class="field">¿Ya tenés un código de conexión de otro dispositivo?
+      <div class="toolbar" style="margin:4px 0 0"><input id="syPaste" placeholder="Pegá el código acá" style="flex:1;min-width:0"><button class="btn pri" id="syPasteGo">Conectar</button></div></div>
+    <details style="margin-top:10px"><summary style="cursor:pointer"><b>Primera vez: crear y conectar la planilla</b> (una sola vez, 5 minutos, desde la PC)</summary>
+    <ol class="steps">
+      <li>Creá una planilla nueva en <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> (por ejemplo "Gonza-Cositorto datos").</li>
+      <li>En la planilla: <i>Extensiones → Apps Script</i>. Borrá lo que haya en <i>Código.gs</i> y pegá el código de abajo.</li>
+      <li>En la línea <code>const CLAVE = 'cambia-esta-clave';</code> poné una clave tuya (letras y números, larga). Guardá (Ctrl+S).</li>
+      <li><i>Implementar → Nueva implementación</i> → engranaje → <i>Aplicación web</i>. Ejecutar como: <b>Yo</b>. Quién tiene acceso: <b>Cualquier usuario</b>. <i>Implementar</i> y autorizá los permisos con tu cuenta de Google (si aparece "Google no verificó esta app": <i>Configuración avanzada → Ir a… (no seguro)</i>; es tu propio script).</li>
+      <li>Copiá la <b>URL de la aplicación web</b> (termina en <code>/exec</code>) y pegala abajo junto con la clave.</li>
+    </ol>
+    <div class="toolbar" style="margin-top:8px"><button class="btn" id="syCopyScript">Copiar código del script</button></div>
+    <textarea class="code" id="syScript" readonly>${esc(APPS_SCRIPT)}</textarea>
+    <div class="grid2" style="margin-top:10px">
+      <label class="full">URL de la aplicación web<input id="syUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+      <label class="full">Clave<input id="syKey" placeholder="la misma que pusiste en CLAVE"></label>
+    </div>
+    <div class="actions" style="justify-content:flex-start"><button class="btn pri" id="syGo">Conectar planilla</button></div>
+    <p class="hint">Si este dispositivo ya tiene operaciones cargadas, se suben a la planilla y se combinan con lo que haya.</p>
+    </details>`}
+    <p class="hint" id="syMsg"></p></div>`;
+}
+function bindSyncPanel(){
+  const g = id => document.getElementById(id), msg = t => { const m=g('syMsg'); if(m) m.textContent=t; };
+  const copy = async (text, input) => { try{ await navigator.clipboard.writeText(text); msg('Copiado.'); }catch(e){ input?.select(); msg('Seleccionado: copialo con Ctrl+C / Copiar.'); } };
+  const go = async (url,key) => { msg('Conectando…'); try{ await connectSheet(url,key); renderDatos(); msg('Conectado. '+S.ops.length+' operaciones sincronizadas.'); render(); }catch(e){ msg('No se pudo conectar: '+e.message); } };
+  g('syNow') && (g('syNow').onclick = ()=>syncNow({full:true}));
+  g('syOff') && (g('syOff').onclick = ()=>{ if(confirm('¿Desconectar este dispositivo de la planilla? Los datos quedan en este dispositivo y en la planilla.')){ disconnectSheet(); renderDatos(); } });
+  g('syCopy') && (g('syCopy').onclick = ()=>copy(g('syCode').value, g('syCode')));
+  g('syCopyScript') && (g('syCopyScript').onclick = ()=>copy(APPS_SCRIPT, g('syScript')));
+  g('syGo') && (g('syGo').onclick = ()=>go(g('syUrl').value, g('syKey').value));
+  g('syPasteGo') && (g('syPasteGo').onclick = ()=>{ const o = parseConnCode(g('syPaste').value); if(!o) return msg('El código no es válido. Copialo completo desde el otro dispositivo.'); go(o.u, o.k); });
 }
 
 /* ---------------------------- Arranque ---------------------------- */
@@ -1042,8 +1271,10 @@ let autoTimer=null;
 function setupAuto(){ clearInterval(autoTimer); if(S.prefs.refreshMin>0) autoTimer=setInterval(()=>{ if(!document.hidden) refreshMarket(false); }, S.prefs.refreshMin*60000); }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 render();
+$('#syncInd').onclick = () => { S.prefs.tab='datos'; save(); render(); };
 refreshMarket(true);
 setupAuto();
+if(S.sync){ renderSyncInd(); startPolling(); syncNow(); }
 </script>
 </body>
 </html>
